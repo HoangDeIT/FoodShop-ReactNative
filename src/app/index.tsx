@@ -1,6 +1,6 @@
 
 import { useCurrentApp } from "@/context/app.context";
-import { getAccountAPI } from "@/utils/api";
+import { getAccountAPI } from "@/utils/api.auth";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";

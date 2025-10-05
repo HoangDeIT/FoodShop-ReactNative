@@ -1,13 +1,13 @@
 import Background from "@/assets/images/background-food.jpg";
 import { useCurrentApp } from "@/context/app.context";
-import { loginApi } from "@/utils/api";
+import { loginApi } from "@/utils/api.auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ImageBackground, Keyboard, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { Button, Text, TextInput, useTheme } from "react-native-paper";
+import { Button, Snackbar, Text, TextInput, useTheme } from "react-native-paper";
 export default function LoginScreen() {
   const theme = useTheme();
   const [email, setEmail] = useState("");
@@ -15,22 +15,73 @@ export default function LoginScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const { setAppState } = useCurrentApp();
+  const [snackbar, setSnackbar] = useState<{
+    visible: boolean;
+    message: string;
+    type: "success" | "error";
+  }>({
+    visible: false,
+    message: "",
+    type: "success",
+  });
   const login = async () => {
-    setLoading(true);
-    const res = await loginApi(email, password);
-
-    console.log("Login response:", res);
-    if (res.data) {
-      router.replace("/(tabs)");
-      setAppState(res.data);
-      await AsyncStorage.setItem("access_token", res.data.access_token);
-      setEmail("");
-      setPassword("");
-    } else {
-      alert("Login failed");
+    if (!email || !password) {
+      setSnackbar({
+        visible: true,
+        message: "Please enter both email and password.",
+        type: "error",
+      });
+      return;
     }
-    setLoading(false);
-  }
+
+    setLoading(true);
+    try {
+      const res = await loginApi(email, password);
+
+      // OTP chưa verify
+      if (res.statusCode === 999) {
+        setSnackbar({
+          visible: true,
+          message: "Your account is not verified. Please check your email.",
+          type: "error",
+        });
+        router.push({
+          pathname: "/verify",
+          params: { email, type: "register" },
+        });
+      }
+
+      // Đăng nhập thành công
+      else if (res.data) {
+        setSnackbar({
+          visible: true,
+          message: "Login successful!",
+          type: "success",
+        });
+        await AsyncStorage.setItem("access_token", res.data.access_token);
+        setAppState(res.data);
+        setEmail("");
+        setPassword("");
+        setTimeout(() => {
+          router.replace("/(tabs)");
+        }, 1200);
+      } else {
+        setSnackbar({
+          visible: true,
+          message: "Login failed. Please check your credentials.",
+          type: "error",
+        });
+      }
+    } catch (err: any) {
+      setSnackbar({
+        visible: true,
+        message: "Network error. Please try again later.",
+        type: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
 
 
@@ -113,19 +164,29 @@ export default function LoginScreen() {
               SIGN IN
             </Button>
 
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push("/forgot.password")}>
               <Text style={styles.link}>Forgot password?</Text>
             </TouchableOpacity>
 
             <View style={styles.bottomRow}>
               <Text style={{ color: "white" }}>Don’t have an account?</Text>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push("/register")}>
                 <Text style={[styles.link, { marginLeft: 5 }]}>Sign up</Text>
               </TouchableOpacity>
             </View>
 
           </BlurView>
-
+          {/* ✅ Snackbar hiển thị thông báo */}
+          <Snackbar
+            visible={snackbar.visible}
+            onDismiss={() => setSnackbar({ ...snackbar, visible: false })}
+            duration={2500}
+            style={{
+              backgroundColor: snackbar.type === "success" ? "#2e7d32" : "#d32f2f",
+            }}
+          >
+            {snackbar.message}
+          </Snackbar>
         </ImageBackground>
       </TouchableWithoutFeedback>
     </KeyboardAwareScrollView>

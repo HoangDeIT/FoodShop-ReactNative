@@ -19,6 +19,11 @@ export default function RootLayout() {
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)/verify" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)/register" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)/forgot.password" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)/reset.password" options={{ headerShown: false }} />
+
         </Stack>
         <StatusBar style="auto" />
       </AppProvider>
