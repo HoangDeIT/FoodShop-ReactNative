@@ -12,9 +12,15 @@ declare global {
         email: string;
         role: "admin" | "seller" | "customer";
     };
+    interface ILocation {
+        latitude: number;
+        longitude: number;
+        address?: string;
+    }
 
-    interface IUserLogin extends IProfile {
+    interface IUserLogin extends IUserR {
         access_token: string;
+        location: ILocation;
     }
     interface IUserR {
         avatar?: string;
@@ -31,5 +37,10 @@ declare global {
         OTP?: string;
         OTPExpired?: string;
         status: "active" | "inactive";
+    }
+    export interface IUpdateLocationReq {
+        latitude: number;
+        longitude: number;
+        address?: string;
     }
 }

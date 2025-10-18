@@ -59,11 +59,11 @@ export default function LoginScreen() {
           type: "success",
         });
         await AsyncStorage.setItem("access_token", res.data.access_token);
-        setAppState(res.data);
+        // setAppState(res.data);
         setEmail("");
         setPassword("");
         setTimeout(() => {
-          router.replace("/(tabs)");
+          router.replace("/(auth)/location.loading");
         }, 1200);
       } else {
         setSnackbar({

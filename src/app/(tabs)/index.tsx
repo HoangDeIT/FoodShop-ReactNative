@@ -1,10 +1,11 @@
 import ProductHorizontalList from "@/components/hompage/horizontal.products.list";
 import HorizontalShopList from "@/components/hompage/horizontal.shops.list";
 import ProductList from "@/components/list/product.list";
+import { useCurrentApp } from "@/context/app.context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, FlatList, Image, ScrollView, View } from "react-native";
+import { Alert, FlatList, Image, Pressable, ScrollView, View } from "react-native";
 import { Card, Searchbar, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -118,7 +119,7 @@ const HomePage = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [categories, setCategories] = useState<Category[]>([]);
     const [columns, setColumns] = useState<Category[][]>([]);
-
+    const { setAppState, appState } = useCurrentApp();
     useEffect(() => {
         // 🔹 Giả lập fetch API trả về cùng format như thật
         const fetchCategories = async () => {
@@ -451,12 +452,14 @@ const HomePage = () => {
             <ScrollView style={{ flex: 1, backgroundColor: "#fff" }}>
                 {/* Header */}
                 <View style={{ backgroundColor: "#ff6d00", padding: 12 }}>
-                    <Text style={{ color: "white", fontSize: 16, fontWeight: "600" }}>
-                        Giao đến:
-                    </Text>
-                    <Text style={{ color: "white", fontWeight: "bold" }}>
-                        a11 - 10 Đ. Số 6, Phường 7, Vị Thanh, Hậu Giang
-                    </Text>
+                    <Pressable onPress={() => router.push("/(stack)/address")}>
+                        <Text style={{ color: "white", fontSize: 16, fontWeight: "600" }}>
+                            Giao đến:
+                        </Text>
+                        <Text style={{ color: "white", fontWeight: "bold" }}>
+                            {appState?.location?.address || "Đang tìm vị trí"}
+                        </Text>
+                    </Pressable>
                     <Searchbar
                         placeholder="Cơm chay, Bún Thái Giảm 40.000đ"
                         value={searchQuery}

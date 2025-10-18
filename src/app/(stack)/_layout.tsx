@@ -42,6 +42,12 @@ export default function StackLayout() {
                     title: "Danh mục sản phẩm",
                 }}
             />
+            <Stack.Screen
+                name="address"
+                options={{
+                    title: "Danh mục sản phẩm",
+                }}
+            />
         </Stack>
     );
 }

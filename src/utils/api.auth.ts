@@ -6,7 +6,7 @@ export const loginApi = async (username: string, password: string) => {
 }
 export const getAccountAPI = async () => {
     const url = `/api/v1/auth/get-profile`;
-    return await axios.get<IBackendRes<IProfile>>(url)
+    return await axios.get<IBackendRes<IUserLogin>>(url)
 }
 
 export const registerApi = async (data: {
@@ -45,4 +45,7 @@ export const checkUserApi = async (data: { email: string; password: string }) =>
     const url = "/api/v1/auth/valid-user";
     return await axios.post<IBackendRes<any>>(url, data);
 };
-
+export const updateLocationApi = async (data: IUpdateLocationReq) => {
+    const url = "/api/v1/users/location-update";
+    return await axios.patch<IBackendRes<IUserLogin>>(url, data);
+};

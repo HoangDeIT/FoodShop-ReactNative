@@ -1,49 +1,53 @@
-
 import { useCurrentApp } from "@/context/app.context";
 import { getAccountAPI } from "@/utils/api.auth";
-
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
-import * as SplashScreen from 'expo-splash-screen';
+import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
-const RootPage = () => {
+
+// 🛡️ Guard cấp module: tồn tại qua remount trong Strict Mode
+let BOOTSTRAPPED = false;
+console.log("🟠 index.tsx FILE LOADED");
+export default function RootPage() {
+    console.log("🟠 RootPage() rendered");
     const { setAppState } = useCurrentApp();
-    const [state, setState] = useState<any>();
-    // const [loaded, error] = useFonts({ [APP_FONT]: require("@/assets/font/OpenSans-Regular.ttf") });
-    SplashScreen.preventAutoHideAsync();
-    // if (true) {
-    //     return (
-    //         <Redirect href={"/(tabs)"} />
-    //     )
-    // }
+    const [ready, setReady] = useState(false);
+
     useEffect(() => {
-        const fetchAccount = async () => {
+        console.log("🟠 RootPage useEffect() fired");
+        if (BOOTSTRAPPED) {
+            // Đã chạy lần trước (trong chu kỳ mount đầu của Strict Mode)
+            // → bỏ qua để tránh chạy lại lần 2
+            return;
+        }
+        BOOTSTRAPPED = true;
+
+        (async () => {
             try {
                 const res = await getAccountAPI();
-                console.log("Get profile response:", res);
-                if (res.data) {
-                    setAppState({
-                        ...res.data,
-                        access_token: await AsyncStorage.getItem("access_token") ?? ""
-                    })
-                    router.replace("/(tabs)")
-                } else {
-                    AsyncStorage.clear()
-                    router.replace("/(auth)/login")
-                }
-            } catch (error) {
-                setState(() => {
-                    throw new Error("Can not connect to backend");
-                })
-            } finally {
-                await SplashScreen.hideAsync();
-            }
-        }
-        fetchAccount();
-    }, [])
-    return (
 
-        <></>
-    )
+                if (res?.data) {
+                    const token = (await AsyncStorage.getItem("access_token")) ?? "";
+                    setAppState({ ...res.data, access_token: token });
+
+                    // Delay 1 tick để Router sync trước khi điều hướng
+                    setTimeout(() => router.replace("/(auth)/location.loading"), 0);
+                } else {
+                    await AsyncStorage.clear();
+                    setTimeout(() => router.replace("/(auth)/login"), 0);
+                }
+            } catch (err) {
+                console.log("❌ Backend error:", err);
+                await AsyncStorage.clear();
+                setTimeout(() => router.replace("/(auth)/login"), 0);
+            } finally {
+                // Ẩn splash duy nhất 1 lần
+                await SplashScreen.hideAsync();
+                setReady(true);
+            }
+        })();
+    }, []);
+
+    if (!ready) return null;
+    return null;
 }
-export default RootPage;
