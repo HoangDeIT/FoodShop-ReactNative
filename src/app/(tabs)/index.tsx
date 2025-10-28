@@ -1,29 +1,19 @@
+import CategoriesList from "@/components/hompage/categories.list";
 import ProductHorizontalList from "@/components/hompage/horizontal.products.list";
 import HorizontalShopList from "@/components/hompage/horizontal.shops.list";
-import ProductList from "@/components/list/product.list";
+import ShopList from "@/components/list/shop.list";
 import { useCurrentApp } from "@/context/app.context";
+import { getSellers } from "@/utils/customer.api";
+import { convertToShops, IShop } from "@/utils/function";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, FlatList, Image, Pressable, ScrollView, View } from "react-native";
-import { Card, Searchbar, Text } from "react-native-paper";
+import { Alert, FlatList, Pressable, RefreshControl, ScrollView, View } from "react-native";
+import { ActivityIndicator, Card, Searchbar, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // ✅ Định nghĩa type theo API thật
-type Category = {
-    _id: string;
-    name: string;
-    description: string;
-    image: string;
-    icon: string;
-    createdBy: { _id: string; email: string };
-    updatedBy?: { _id: string; email: string };
-    isDeleted: boolean;
-    deletedAt: string | null;
-    createdAt: string;
-    updatedAt: string;
-    __v: number;
-};
+
 const restaurants = [
     {
         id: "r1",
@@ -117,321 +107,11 @@ const products = [
 
 const HomePage = () => {
     const [searchQuery, setSearchQuery] = useState("");
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [columns, setColumns] = useState<Category[][]>([]);
+    const [refreshing, setRefreshing] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
     const { setAppState, appState } = useCurrentApp();
-    useEffect(() => {
-        // 🔹 Giả lập fetch API trả về cùng format như thật
-        const fetchCategories = async () => {
-            const data: Category[] = [
-                {
-                    _id: "68e762637d2985371f7fb721",
-                    name: "Đồ ăn nhanh",
-                    description: "Các món ăn nhanh như hamburger, pizza, gà rán...",
-                    image: "https://example.com/images/fastfood.jpg",
-                    icon: "https://example.com/icons/fastfood.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-                {
-                    _id: "68e762637d2985371f7fb722",
-                    name: "Cơm trưa văn phòng",
-                    description: "Cơm hộp tiện lợi, nhiều món hấp dẫn.",
-                    image: "https://example.com/images/lunchbox.jpg",
-                    icon: "https://example.com/icons/lunchbox.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-                {
-                    _id: "68e762637d2985371f7fb723",
-                    name: "Trà sữa & nước ngọt",
-                    description: "Các loại nước giải khát, trà sữa và cà phê.",
-                    image: "https://example.com/images/drinks.jpg",
-                    icon: "https://example.com/icons/drinks.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-                {
-                    _id: "68e762637d2985371f7fb724",
-                    name: "Ăn vặt",
-                    description: "Các món ăn nhẹ, snack, khoai chiên, bánh ngọt...",
-                    image: "https://example.com/images/snack.jpg",
-                    icon: "https://example.com/icons/snack.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-                {
-                    _id: "68e762637d2985371f7fb725",
-                    name: "Bánh ngọt & cà phê",
-                    description: "Bánh ngọt, donut, croissant cùng cà phê thơm ngon.",
-                    image: "https://example.com/images/cake-coffee.jpg",
-                    icon: "https://example.com/icons/cake-coffee.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-                {
-                    _id: "68e762637d2985371f7fb726",
-                    name: "Lẩu & nướng",
-                    description: "Buffet lẩu nướng, hải sản tươi ngon.",
-                    image: "https://example.com/images/hotpot-bbq.jpg",
-                    icon: "https://example.com/icons/hotpot-bbq.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-                {
-                    _id: "68e762637d2985371f7fb727",
-                    name: "Món chay",
-                    description: "Các món chay thanh đạm, tốt cho sức khỏe.",
-                    image: "https://example.com/images/vegetarian.jpg",
-                    icon: "https://example.com/icons/vegetarian.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-                {
-                    _id: "68e762637d2985371f7fb728",
-                    name: "Hải sản",
-                    description: "Các món hải sản tươi sống, hấp dẫn.",
-                    image: "https://example.com/images/seafood.jpg",
-                    icon: "https://example.com/icons/seafood.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-                {
-                    _id: "68e762637d2985371f7fb729",
-                    name: "Mì & phở",
-                    description: "Mì quảng, phở bò, hủ tiếu, bún chả cá...",
-                    image: "https://example.com/images/noodles.jpg",
-                    icon: "https://example.com/icons/noodles.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-                {
-                    _id: "68e762637d2985371f7fb72a",
-                    name: "Đồ nướng đường phố",
-                    description: "Xiên nướng, thịt nướng vỉa hè, bánh tráng nướng...",
-                    image: "https://example.com/images/street-grill.jpg",
-                    icon: "https://example.com/icons/street-grill.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-                {
-                    _id: "68e762637d2985371f7fb72b",
-                    name: "Pizza & Pasta",
-                    description: "Các món pizza Ý, pasta, spaghetti...",
-                    image: "https://example.com/images/pizza-pasta.jpg",
-                    icon: "https://example.com/icons/pizza-pasta.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-                {
-                    _id: "68e762637d2985371f7fb72c",
-                    name: "Cơm tấm & bún thịt nướng",
-                    description: "Cơm tấm sườn bì chả, bún thịt nướng, nem nướng.",
-                    image: "https://example.com/images/comtam.jpg",
-                    icon: "https://example.com/icons/comtam.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-                {
-                    _id: "68e762637d2985371f7fb72d",
-                    name: "Cơm gia đình",
-                    description: "Món cơm nhà nấu, canh chua, cá kho, rau luộc...",
-                    image: "https://example.com/images/home-meal.jpg",
-                    icon: "https://example.com/icons/home-meal.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-                {
-                    _id: "68e762637d2985371f7fb72e",
-                    name: "Bún, miến, cháo",
-                    description: "Các món bún bò, miến gà, cháo cá, cháo sườn...",
-                    image: "https://example.com/images/vermicelli.jpg",
-                    icon: "https://example.com/icons/vermicelli.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-                {
-                    _id: "68e762637d2985371f7fb72f",
-                    name: "Đồ ăn Hàn Quốc",
-                    description: "Tokbokki, kimbap, canh kim chi, BBQ Hàn...",
-                    image: "https://example.com/images/korean.jpg",
-                    icon: "https://example.com/icons/korean.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-                {
-                    _id: "68e762637d2985371f7fb730",
-                    name: "Đồ ăn Nhật Bản",
-                    description: "Sushi, sashimi, udon, tempura...",
-                    image: "https://example.com/images/japanese.jpg",
-                    icon: "https://example.com/icons/japanese.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-                {
-                    _id: "68e762637d2985371f7fb731",
-                    name: "Đồ ăn Trung Quốc",
-                    description: "Dimsum, vịt quay Bắc Kinh, hoành thánh...",
-                    image: "https://example.com/images/chinese.jpg",
-                    icon: "https://example.com/icons/chinese.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-                {
-                    _id: "68e762637d2985371f7fb732",
-                    name: "Bánh mì & sandwich",
-                    description: "Bánh mì thịt, sandwich kẹp trứng, pate, salad...",
-                    image: "https://example.com/images/sandwich.jpg",
-                    icon: "https://example.com/icons/sandwich.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-                {
-                    _id: "68e762637d2985371f7fb733",
-                    name: "Tráng miệng & kem",
-                    description: "Kem tươi, chè, yogurt, pudding, bánh flan...",
-                    image: "https://example.com/images/dessert.jpg",
-                    icon: "https://example.com/icons/dessert.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-                {
-                    _id: "68e762637d2985371f7fb734",
-                    name: "Đồ uống có cồn",
-                    description: "Bia, rượu vang, cocktail nhẹ.",
-                    image: "https://example.com/images/alcohol.jpg",
-                    icon: "https://example.com/icons/alcohol.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-                {
-                    _id: "68e762637d2985371f7fb735",
-                    name: "Combo ưu đãi",
-                    description: "Set ăn tiết kiệm cho 2-4 người, giá tốt nhất.",
-                    image: "https://example.com/images/combo.jpg",
-                    icon: "https://example.com/icons/combo.png",
-                    createdBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    updatedBy: { _id: "68d65a87cd330e1473d9ca11", email: "hoangde102004@gmail.com" },
-                    isDeleted: false,
-                    deletedAt: null,
-                    createdAt: "2025-10-09T07:21:07.206Z",
-                    updatedAt: "2025-10-09T07:34:03.243Z",
-                    __v: 0,
-                },
-            ];
-
-            setCategories(data);
-
-            // 🔹 Chia nhóm 2 hàng (2 category mỗi cột)
-            const grouped = data.reduce((acc: Category[][], _, i) => {
-                if (i % 2 === 0) acc.push(data.slice(i, i + 2));
-                return acc;
-            }, []);
-            setColumns(grouped);
-        };
-
-        fetchCategories();
-    }, []);
+    const [shops, setShops] = useState<IShop[]>([]);
+    const [meta, setMeta] = useState<IMeta | null>(null);
 
     // ✅ Đăng xuất
     const handleLogout = () => {
@@ -446,10 +126,76 @@ const HomePage = () => {
             },
         ]);
     };
+    const fetchSellers = async () => {
+        try {
+            // Gọi API
+            const res = await getSellers(5, 1, 10); // ví dụ: bán kính 5km, trang 1, 10 seller mỗi trang
 
+            // Kiểm tra kết quả trả về
+            if (res?.data && res?.data?.result) {
+                setShops(convertToShops(res.data.result));  // danh sách seller
+                setMeta(res.data.meta);        // phân trang
+            } else {
+                setShops([]);
+                setMeta(null);
+            }
+        } catch (error: any) {
+            console.error("Lỗi khi lấy danh sách seller:", error);
+            setShops([]);
+        }
+    };
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await fetchSellers();
+        setRefreshing(false);
+    }
+    const handleScroll = async (e: any) => {
+        const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
+
+        const isEndReached =
+            layoutMeasurement.height + contentOffset.y >= contentSize.height - 30;
+
+        // Nếu chưa tới đáy hoặc đang load thì bỏ qua
+        if (!isEndReached || loadingMore || !meta) return;
+
+        // Nếu đã tới trang cuối thì ngưng
+        if (meta.current >= meta.pages) return;
+
+        setLoadingMore(true);
+
+        try {
+            const nextPage = meta.current + 1;
+            const res = await getSellers(5, nextPage, 10);
+
+            if (res?.data && res?.data?.result) {
+                const newShops = convertToShops(res.data.result);
+                setShops((prev) => [...prev, ...newShops]);
+                setMeta(res.data.meta);
+            }
+        } catch (error) {
+            console.error("Lỗi khi tải thêm:", error);
+        } finally {
+            await new Promise((r) => setTimeout(r, 2000));
+            setLoadingMore(false);
+        }
+    };
+    useEffect(() => {
+        fetchSellers();
+    }, []);
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-            <ScrollView style={{ flex: 1, backgroundColor: "#fff" }}>
+            <ScrollView style={{ flex: 1, backgroundColor: "#fff" }}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={['#4CAF50']} // 🎨 màu xoay vòng trên Android
+                        tintColor="#4CAF50"  // 🎨 màu spinner trên iOS
+                        title="Đang làm mới..." // hiển thị text trên iOS
+                    />
+                }
+                onScroll={handleScroll}
+            >
                 {/* Header */}
                 <View style={{ backgroundColor: "#ff6d00", padding: 12 }}>
                     <Pressable onPress={() => router.push("/(stack)/address")}>
@@ -480,65 +226,8 @@ const HomePage = () => {
                     </Card.Content>
                 </Card>
                 {/* ✅ Categories - 2 hàng cuộn ngang */}
-                <FlatList
-                    data={columns}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    decelerationRate="fast"
-                    keyExtractor={(_, i) => i.toString()}
-                    contentContainerStyle={{
-                        paddingHorizontal: 10,
-                        paddingVertical: 6,
-                    }}
-                    renderItem={({ item }) => (
-                        <View
-                            style={{
-                                flexDirection: "column",
-                                alignItems: "center",
-                                marginHorizontal: 10,
-                            }}
-                        >
-                            {item.map((cat) => (
-                                <View
-                                    key={cat._id}
-                                    style={{
-                                        alignItems: "center",
-                                        marginVertical: 10,
-                                        width: 80,       // 👈 Chiều rộng cố định để text không đẩy lệch
-                                        height: 100,     // 👈 Chiều cao cố định để các hàng đều nhau
-                                    }}
-                                >
-                                    {/* 🖼 icon URL từ API */}
-                                    <Image
-                                        source={{ uri: cat.icon }}
-                                        style={{
-                                            width: 44,
-                                            height: 44,
-                                            borderRadius: 22,
-                                            backgroundColor: "#ffecb3",
-                                        }}
-                                        resizeMode="cover"
-                                    />
-                                    <Text
-                                        numberOfLines={2}               // 👈 Giới hạn hiển thị tối đa 2 dòng
-                                        ellipsizeMode="tail"            // 👈 Nếu dài quá, thêm "..." ở cuối
-                                        style={{
-                                            width: 70,                    // 👈 Cố định chiều rộng để không kéo giãn
-                                            lineHeight: 16,               // 👌 Cân đối khoảng cách giữa 2 dòng
-                                            textAlign: "center",
-                                            fontSize: 12,
-                                            marginTop: 6,
-                                            color: "#333",
-                                        }}
-                                    >
-                                        {cat.name}
-                                    </Text>
-                                </View>
-                            ))}
-                        </View>
-                    )}
-                />
 
+                <CategoriesList />
                 {/* ✅ Bộ sưu tập */}
                 <View style={{ paddingHorizontal: 12, marginTop: 10 }}>
                     <Text style={{ fontWeight: "bold", fontSize: 16, marginBottom: 10 }}>
@@ -606,10 +295,20 @@ const HomePage = () => {
                     data={products}
                     onSeeAll={() => console.log("Xem tất cả sản phẩm")}
                 />
-                <ProductList
+                {/* <ProductList
                     data={products}
                     scrollEnabled={false}
+                /> */}
+                <ShopList
+                    data={shops}
+
                 />
+                {loadingMore && (
+                    <View style={{ paddingVertical: 16, alignItems: "center" }}>
+                        <ActivityIndicator color="#4CAF50" size="small" />
+                        <Text style={{ marginTop: 6, color: "#4CAF50" }}>Đang tải thêm...</Text>
+                    </View>
+                )}
             </ScrollView>
         </SafeAreaView>
     );

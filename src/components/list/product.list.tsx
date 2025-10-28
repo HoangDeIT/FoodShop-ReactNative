@@ -16,7 +16,6 @@ interface ProductListProps {
 
 export default function ProductList({ data, scrollEnabled }: ProductListProps) {
     const router = useRouter();
-
     return (
         <FlatList
             data={data}

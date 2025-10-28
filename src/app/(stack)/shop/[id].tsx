@@ -1,36 +1,54 @@
+import ProductOptionsSheet from "@/components/products/product.option.sheet";
+import { getProducts, getProfileSeller } from "@/utils/customer.api";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { Image, ScrollView, View } from "react-native";
 import { Card, Chip, Divider, IconButton, Text } from "react-native-paper";
 
 export default function RestaurantScreen() {
-    const menu = [
-        {
-            id: 1,
-            name: "Cơm gà chiên nước mắm",
-            desc: "Cánh/đùi/ức gà, cơm chiên, rau, súp",
-            price: 50000,
-            sold: 98,
-            image:
-                "https://cdn.tgdd.vn/2020/08/CookProduct/comga-1200x676-1.jpg",
-        },
-        {
-            id: 2,
-            name: "Cơm gà xối mỡ",
-            desc: "Cánh/đùi/ức gà, cơm chiên, rau, súp",
-            price: 50000,
-            sold: 13,
-            image:
-                "https://cdn.tgdd.vn/2021/06/CookRecipe/Avatar/com-ga-xoi-mo-thumbnail.jpg",
-        },
-        {
-            id: 3,
-            name: "Cơm chiên cá mặn",
-            desc: "Cơm chiên cá mặn, lạp xưởng, trứng, rau, súp",
-            price: 45000,
-            sold: 11,
-            image:
-                "https://cdn.tgdd.vn/2021/04/CookProduct/comchien-thumbnail-620x620.jpg",
-        },
-    ];
+    const router = useRouter();
+    const { id } = useLocalSearchParams();
+    const [menu, setMenu] = useState<IProductR[]>([]);
+    const [meta, setMeta] = useState<IMeta>();
+    const [seller, setSeller] = useState<IUserR>();
+    const [isFavorite, setIsFavorite] = useState(false);
+    // ✅ State quản lý sheet
+    const [visible, setVisible] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState<IProductR>();
+    const fetchMenu = async () => {
+        const res = await getProducts(1, 5, id as string);
+        const res2 = await getProfileSeller(id as string);
+        if (!res.error && res.data && res.data.result && !res2.error && res2.data) {
+            setMenu(res.data.result);
+            setMeta(res.data.meta);
+            setSeller(res2.data);
+        }
+    }
+    useEffect(() => {
+        fetchMenu();
+    }, [id]);
+    const handleAddPress = (product: IProductR) => {
+        const hasOptions =
+            (product.sizes && product.sizes.length > 0) ||
+            (product.toppings && product.toppings.length > 0);
+        console.log("Has options:", hasOptions);
+        if (hasOptions) {
+            // mở sheet chọn topping/size
+            setSelectedProduct(product);
+
+            setTimeout(() => setVisible(true), 500);
+        } else {
+            // xử lý thêm vào giỏ hàng luôn
+            console.log("Thêm thẳng vào giỏ:", product.name);
+            // TODO: gọi hàm addToCart(product)
+        }
+    };
+    const toggleFavorite = () => {
+        setIsFavorite((prev) => !prev);
+        // TODO: Gọi API backend sau này:
+        // if (!isFavorite) await api.post(`/favorites/${seller._id}`)
+        // else await api.delete(`/favorites/${seller._id}`)
+    };
 
     return (
         <ScrollView
@@ -41,12 +59,25 @@ export default function RestaurantScreen() {
             <Card mode="contained" style={{ margin: 10, borderRadius: 12 }}>
                 <Card.Cover
                     source={{
-                        uri: "https://cdn.tgdd.vn/2022/07/CookDish/pizza-thumbnail.jpg",
+                        uri: `${process.env.EXPO_PUBLIC_API_URL}/public/images/users/${seller?.avatar}`,
                     }}
                 />
+                <IconButton
+                    icon={isFavorite ? "heart" : "heart-outline"}
+                    iconColor={isFavorite ? "#ff3b30" : "#fff"}
+                    size={28}
+                    onPress={toggleFavorite}
+                    style={{
+                        position: "absolute",
+                        top: 10,
+                        right: 10,
+                        backgroundColor: "rgba(0,0,0,0.3)",
+                    }}
+                />
+
                 <Card.Content style={{ marginTop: 10 }}>
                     <Text variant="titleLarge" style={{ fontWeight: "bold" }}>
-                        Pizza Vị Thanh
+                        {seller?.name}
                     </Text>
                     <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
                         <Text>⭐ 4.5 (100+ Bình luận) · </Text>
@@ -55,12 +86,12 @@ export default function RestaurantScreen() {
 
                     {/* Ưu đãi */}
                     <View style={{ marginTop: 8, flexDirection: "column", gap: 4 }}>
-                        <Chip icon="tag" compact>
+                        {/* <Chip icon="tag" compact>
                             Giảm 19% cho đơn từ 300.000đ
                         </Chip>
                         <Chip icon="tag" compact>
                             Giảm 21% cho đơn từ 400.000đ
-                        </Chip>
+                        </Chip> */}
                     </View>
                 </Card.Content>
             </Card>
@@ -89,10 +120,12 @@ export default function RestaurantScreen() {
                 </Text>
 
                 {menu.map((item) => (
-                    <Card key={item.id} style={{ marginBottom: 14, borderRadius: 10, elevation: 2 }}>
+                    <Card key={item._id} style={{ marginBottom: 14, borderRadius: 10, elevation: 2 }}
+                        onPress={() => router.push(`/(stack)/product/${item._id}`)}
+                    >
                         <View style={{ flexDirection: "row" }}>
                             <Image
-                                source={{ uri: item.image }}
+                                source={{ uri: `${process.env.EXPO_PUBLIC_API_URL}/public/images/products/${item.image}` }}
                                 style={{
                                     width: 100,
                                     height: 100,
@@ -102,7 +135,7 @@ export default function RestaurantScreen() {
                             />
                             <View style={{ flex: 1, padding: 10 }}>
                                 <Text style={{ fontWeight: "bold" }}>{item.name}</Text>
-                                <Text style={{ color: "#555", fontSize: 13 }}>{item.desc}</Text>
+                                <Text style={{ color: "#555", fontSize: 13 }}>{item.description}</Text>
                                 <Text style={{ color: "#999", marginTop: 2 }}>{item.sold} đã bán</Text>
                                 <View
                                     style={{
@@ -113,15 +146,26 @@ export default function RestaurantScreen() {
                                     }}
                                 >
                                     <Text style={{ fontWeight: "bold", color: "#ff6d00" }}>
-                                        {item.price.toLocaleString("vi-VN")}đ
+                                        {item.basePrice.toLocaleString("vi-VN")}đ
                                     </Text>
-                                    <IconButton icon="plus" size={22} iconColor="#ff6d00" />
+                                    <IconButton icon="plus" size={22} iconColor="#ff6d00"
+                                        onPress={() => handleAddPress(item)}
+                                    />
                                 </View>
                             </View>
                         </View>
                     </Card>
                 ))}
             </View>
+            {selectedProduct && (
+                <ProductOptionsSheet
+                    visible={visible}
+                    onClose={() => setVisible(false)}
+                    product={selectedProduct}
+                    sizes={selectedProduct.sizes || []}
+                    toppings={selectedProduct.toppings || []}
+                />
+            )}
         </ScrollView>
     );
 }

@@ -1,12 +1,13 @@
 import { useRouter } from "expo-router";
+import { useEffect } from "react";
 import { FlatList, Image, TouchableOpacity, View } from "react-native";
 import { Text } from "react-native-paper";
 
 export interface IShop {
-    id: string;
+    _id: string;
     name: string;
     image: string;
-    rating: string;
+    // rating: string;
     distance: string;
     time: string;
 }
@@ -17,15 +18,16 @@ interface ShopListProps {
 
 export default function ShopList({ data }: ShopListProps) {
     const router = useRouter();
-
+    useEffect(() => { console.log("Check ShopList", data) }, []);
     return (
         <FlatList
             data={data}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item._id}
             contentContainerStyle={{ padding: 12 }}
+            scrollEnabled={false}
             renderItem={({ item }) => (
                 <TouchableOpacity
-                    onPress={() => router.push(`/(stack)/shop/${item.id}`)}
+                    onPress={() => router.push(`/(stack)/shop/${item._id}`)}
                     style={{
                         flexDirection: "row",
                         backgroundColor: "#fff",
@@ -38,7 +40,7 @@ export default function ShopList({ data }: ShopListProps) {
                     }}
                 >
                     <Image
-                        source={{ uri: item.image }}
+                        source={{ uri: `${process.env.EXPO_PUBLIC_API_URL}/public/images/users/${item.image}` }}
                         style={{ width: 90, height: 90, borderRadius: 6, margin: 10 }}
                     />
 
@@ -57,7 +59,7 @@ export default function ShopList({ data }: ShopListProps) {
                                 marginTop: 4,
                             }}
                         >
-                            <Text style={{ fontSize: 12, color: "#777" }}>⭐ {item.rating}</Text>
+                            {/* <Text style={{ fontSize: 12, color: "#777" }}>⭐ {item.rating}</Text> */}
                             <Text style={{ fontSize: 12, color: "#777", marginLeft: 8 }}>
                                 {item.distance}
                             </Text>

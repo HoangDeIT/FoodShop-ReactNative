@@ -129,12 +129,12 @@ export default function ProductDetailScreen() {
                                 {mockData.name}
                             </Text>
 
-                            <IconButton
+                            {/* <IconButton
                                 icon={liked ? "heart" : "heart-outline"}
                                 iconColor={liked ? "#ff6d00" : "#999"}
                                 size={28}
                                 onPress={() => setLiked((v) => !v)}
-                            />
+                            /> */}
                         </View>
 
                         <View
@@ -454,15 +454,15 @@ export default function ProductDetailScreen() {
                     onClose={() => setShowSheet(false)}
                     product={{ name: "Cơm gà xối mỡ", image: "https://example.com/com-ga.jpg", basePrice: 50000 }}
                     sizes={[
-                        { id: "s", name: "Nhỏ", price: 0 },
-                        { id: "m", name: "Vừa", price: 5000 },
-                        { id: "l", name: "Lớn", price: 10000 },
+                        { _id: "s", name: "Nhỏ", price: 0 },
+                        { _id: "m", name: "Vừa", price: 5000 },
+                        { _id: "l", name: "Lớn", price: 10000 },
                     ]}
                     toppings={[
-                        { id: "1", name: "Trứng chiên", price: 5000 },
-                        { id: "2", name: "Cơm thêm", price: 10000 },
-                        { id: "3", name: "Lạp xưởng", price: 15000 },
-                        { id: "4", name: "Rau trộn", price: 10000 },
+                        { _id: "1", name: "Trứng chiên", price: 5000 },
+                        { _id: "2", name: "Cơm thêm", price: 10000 },
+                        { _id: "3", name: "Lạp xưởng", price: 15000 },
+                        { _id: "4", name: "Rau trộn", price: 10000 },
                     ]}
                 />
             </Portal>

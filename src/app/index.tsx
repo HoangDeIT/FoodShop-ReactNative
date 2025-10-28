@@ -31,7 +31,8 @@ export default function RootPage() {
                     setAppState({ ...res.data, access_token: token });
 
                     // Delay 1 tick để Router sync trước khi điều hướng
-                    setTimeout(() => router.replace("/(auth)/location.loading"), 0);
+                    // setTimeout(() => router.replace("/(auth)/location.loading"), 0);
+                    setTimeout(() => router.replace("/(tabs)"), 0);
                 } else {
                     await AsyncStorage.clear();
                     setTimeout(() => router.replace("/(auth)/login"), 0);

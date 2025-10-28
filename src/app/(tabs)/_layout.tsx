@@ -54,6 +54,20 @@ const TabLayout = () => {
                     />
             )
         }
+        if (routeName === "cart") {
+            return (
+                focus ?
+                    <Octicons name="bell-fill"
+                        size={size}
+                        color={APP_COLOR.ORANGE}
+                    />
+                    :
+                    <Octicons name="bell"
+                        size={size}
+                        color={APP_COLOR.GREY}
+                    />
+            )
+        }
         // if (routeName === "notification") {
         //     return (
         //         focus ?
