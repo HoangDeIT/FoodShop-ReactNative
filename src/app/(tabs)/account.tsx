@@ -1,7 +1,9 @@
+import { useRouter } from "expo-router";
 import { ScrollView, View } from "react-native";
 import { Avatar, Divider, List, Text } from "react-native-paper";
 
 export default function AccountScreen() {
+    const router = useRouter();
     return (
         <ScrollView style={{ flex: 1, backgroundColor: "#fff" }}>
             <View style={{ alignItems: "center", marginTop: 20 }}>
@@ -31,6 +33,11 @@ export default function AccountScreen() {
                 title="Trung tâm trợ giúp"
                 left={(props) => <List.Icon {...props} icon="help-circle" />}
                 right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            />
+            <List.Item
+                title="Dev option"
+                onPress={() => router.push("/(stack)/dev")}
+                left={(props) => <List.Icon {...props} icon="code-tags" color="#ff3b30" />}
             />
             <List.Item
                 title="Đăng xuất"

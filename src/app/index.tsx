@@ -1,4 +1,5 @@
 import { useCurrentApp } from "@/context/app.context";
+import { initDb } from "@/db/db";
 import { getAccountAPI } from "@/utils/api.auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
@@ -25,7 +26,7 @@ export default function RootPage() {
         (async () => {
             try {
                 const res = await getAccountAPI();
-
+                await initDb();
                 if (res?.data) {
                     const token = (await AsyncStorage.getItem("access_token")) ?? "";
                     setAppState({ ...res.data, access_token: token });
@@ -47,6 +48,7 @@ export default function RootPage() {
                 setReady(true);
             }
         })();
+
     }, []);
 
     if (!ready) return null;

@@ -1,9 +1,10 @@
 import ProductOptionsSheet from "@/components/products/product.option.sheet";
+import { addToCart } from "@/db/services/cartService";
 import { getProducts, getProfileSeller } from "@/utils/customer.api";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, ScrollView, View } from "react-native";
-import { Card, Chip, Divider, IconButton, Text } from "react-native-paper";
+import { Card, Chip, Divider, IconButton, Snackbar, Text } from "react-native-paper";
 
 export default function RestaurantScreen() {
     const router = useRouter();
@@ -15,6 +16,10 @@ export default function RestaurantScreen() {
     // ✅ State quản lý sheet
     const [visible, setVisible] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<IProductR>();
+    const [snackbar, setSnackbar] = useState<{ visible: boolean; message: string }>({
+        visible: false,
+        message: "",
+    });
     const fetchMenu = async () => {
         const res = await getProducts(1, 5, id as string);
         const res2 = await getProfileSeller(id as string);
@@ -27,22 +32,46 @@ export default function RestaurantScreen() {
     useEffect(() => {
         fetchMenu();
     }, [id]);
-    const handleAddPress = (product: IProductR) => {
+
+
+    const handleAddPress = async (product: IProductR) => {
         const hasOptions =
             (product.sizes && product.sizes.length > 0) ||
             (product.toppings && product.toppings.length > 0);
-        console.log("Has options:", hasOptions);
-        if (hasOptions) {
-            // mở sheet chọn topping/size
-            setSelectedProduct(product);
 
-            setTimeout(() => setVisible(true), 500);
-        } else {
-            // xử lý thêm vào giỏ hàng luôn
-            console.log("Thêm thẳng vào giỏ:", product.name);
-            // TODO: gọi hàm addToCart(product)
+        if (hasOptions) {
+            setSelectedProduct(product);
+            setTimeout(() => setVisible(true), 300);
+            return;
+        }
+
+        try {
+
+            await addToCart({
+                shopId: seller?._id!,
+                shopName: seller!.name,
+                productId: product._id,
+                productName: product.name,
+                basePrice: product.basePrice,
+                quantity: 1,
+                image: product.image,
+                sizeId: null,
+                sizeName: "",
+                toppingIds: [],
+                toppingNames: [],
+                note: "",
+                sizePrice: 0,
+                toppingPrice: 0,
+            });
+
+            // ✅ Hiển thị snackbar thông báo thành công
+            setSnackbar({ visible: true, message: `Đã thêm "${product.name}" vào giỏ hàng 🛒` });
+        } catch (error) {
+            console.error("❌ Lỗi khi thêm vào giỏ:", error);
+            setSnackbar({ visible: true, message: "Thêm sản phẩm thất bại ❌" });
         }
     };
+
     const toggleFavorite = () => {
         setIsFavorite((prev) => !prev);
         // TODO: Gọi API backend sau này:
@@ -157,6 +186,14 @@ export default function RestaurantScreen() {
                     </Card>
                 ))}
             </View>
+            <Snackbar
+                visible={snackbar.visible}
+                onDismiss={() => setSnackbar({ visible: false, message: "" })}
+                duration={2500}
+                style={{ backgroundColor: "rgba(0,0,0,0.85)" }}
+            >
+                {snackbar.message}
+            </Snackbar>
             {selectedProduct && (
                 <ProductOptionsSheet
                     visible={visible}
@@ -164,8 +201,10 @@ export default function RestaurantScreen() {
                     product={selectedProduct}
                     sizes={selectedProduct.sizes || []}
                     toppings={selectedProduct.toppings || []}
+                    seller={seller!}
                 />
             )}
+
         </ScrollView>
     );
 }

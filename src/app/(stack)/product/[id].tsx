@@ -1,4 +1,3 @@
-import ProductOptionsSheet from "@/components/products/product.option.sheet";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import { Image, ScrollView, View } from "react-native";
@@ -10,7 +9,6 @@ import {
     Divider,
     IconButton,
     List,
-    Portal,
     Text,
     TextInput
 } from "react-native-paper";
@@ -448,7 +446,7 @@ export default function ProductDetailScreen() {
                     Thêm vào giỏ • {currency(mockData.price * qty)}
                 </Button>
             </View>
-            <Portal>
+            {/* <Portal>
                 <ProductOptionsSheet
                     visible={showSheet}
                     onClose={() => setShowSheet(false)}
@@ -465,7 +463,7 @@ export default function ProductDetailScreen() {
                         { _id: "4", name: "Rau trộn", price: 10000 },
                     ]}
                 />
-            </Portal>
+            </Portal> */}
         </View>
     );
 }
