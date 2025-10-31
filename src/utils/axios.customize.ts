@@ -7,7 +7,7 @@ const backend = Platform.OS === "android" ?
     process.env.EXPO_PUBLIC_IOS_API_URL
 const instance = axios.create({
     baseURL: backend,
-    timeout: 60 * 1000 //10s
+    timeout: 60 * 500 //10s
 });
 
 // Add a request interceptor

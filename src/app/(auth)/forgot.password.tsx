@@ -37,7 +37,7 @@ export default function ForgotPassword() {
         try {
             setLoading(true);
             const res = await forgotPasswordApi(email.trim());
-            if (!res.error) {
+            if (res && !res.error) {
                 setSnackbar({ visible: true, message: "OTP sent successfully! Please check your email.", type: "success" });
                 setEmail("");
                 setTimeout(() => {

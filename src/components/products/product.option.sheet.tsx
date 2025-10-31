@@ -49,7 +49,12 @@ const ProductOptionsSheet = ({ visible, onClose, product, sizes = [], toppings =
     // ✅ Mở/đóng sheet
     useEffect(() => {
         if (quantityP != 1) setQuantity(quantityP);
-        if (visible) bottomSheetRef.current?.expand();
+        if (visible) {
+            // Đợi 1 chút để đảm bảo sheet render xong
+            setTimeout(() => {
+                bottomSheetRef.current?.snapToIndex(1); // 1 = 90%
+            }, 80);
+        }
         else bottomSheetRef.current?.close();
 
     }, [visible]);
@@ -109,10 +114,7 @@ const ProductOptionsSheet = ({ visible, onClose, product, sizes = [], toppings =
                         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
                             <Image
                                 source={{
-                                    uri:
-                                        product.image && product.image !== ""
-                                            ? product.image
-                                            : "https://via.placeholder.com/150",
+                                    uri: `${process.env.EXPO_PUBLIC_API_URL}/public/images/products/${product.image}`,
                                 }}
                                 style={{ width: 70, height: 70, borderRadius: 8, marginRight: 10 }}
                             />

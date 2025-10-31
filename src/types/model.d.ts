@@ -282,4 +282,16 @@ declare global {
         __v: number;
 
     }
+    export interface IReviewR {
+        _id: string;
+        user: IUserR | string; // người viết review
+        product: IProductR | string;
+        rating: number; // 1–5 sao
+        comment: string;
+        images: string[];
+        replies: IReviewReplyR[];
+        isDeleted: boolean;
+        createdAt: string;
+        updatedAt: string;
+    }
 }
