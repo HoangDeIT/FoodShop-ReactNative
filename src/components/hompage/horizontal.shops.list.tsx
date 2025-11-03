@@ -45,9 +45,9 @@ export default function HorizontalShopList({
                 <Text style={{ fontWeight: "bold", fontSize: 16, color: "#ff6d00" }}>
                     {name}
                 </Text>
-                <TouchableOpacity onPress={onSeeAll}>
+                {/* <TouchableOpacity onPress={onSeeAll}>
                     <Text style={{ color: "#555" }}>Xem tất cả ›</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
             </View>
 
             {description && (
@@ -83,7 +83,7 @@ export default function HorizontalShopList({
                         }}
                     >
                         <Image
-                            source={{ uri: item.image }}
+                            source={{ uri: `${process.env.EXPO_PUBLIC_API_URL}/public/images/users/${item.image}` }}
                             style={{
                                 width: "100%",
                                 height: 100,

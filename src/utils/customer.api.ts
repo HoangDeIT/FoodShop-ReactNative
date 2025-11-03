@@ -130,3 +130,36 @@ export const deleteReplyApi = async (reviewId: string, replyId: string) => {
     const url = `/api/v1/reviews/${reviewId}/replies/${replyId}`;
     return await axios.delete<IBackendRes<IReviewR>>(url);
 };
+export const likeShopApi = async (shopId: string) => {
+    const url = `/api/v1/likes/${shopId}/like`;
+    return await axios.post<IBackendRes<any>>(url);
+}
+export const unLikeShopApi = async (shopId: string) => {
+    const url = `/api/v1/likes/${shopId}/like`;
+    return await axios.delete<IBackendRes<any>>(url);
+}
+export const checkLikeStatus = async (shopId: string) => {
+    const url = `/api/v1/likes/${shopId}/like/status`;
+    return await axios.get<IBackendRes<{ isLike: boolean, shopId: string, userId: string }>>(url);
+}
+export const searchProductsApi = async (search: string) => {
+    const url = `/api/v1/products/search-near?keyword=${search}`;;
+    return await axios.get<IBackendRes<IModelPaginate<IProductSearchResult>>>(url);
+}
+export const findSellerWithProductsApi = async (categoryId: string, currentPage: string, pageSize: string) => {
+    const url = `/api/v1/products/sellers-with-products?categoryId=${categoryId}&current=${currentPage}&pageSize=${pageSize}`;;
+    return await axios.get<IBackendRes<IModelPaginate<ISellerWithProduct>>>(url);
+}
+
+export const findCategoryApi = async (categoryId: string) => {
+    const url = `/api/v1/categories/${categoryId}`;;
+    return await axios.get<IBackendRes<ICategory>>(url);
+}
+export const getSellersType = async () => {
+    const url = `/api/v1/products/types`;
+    return await axios.get<IBackendRes<ISellerWithProductType>>(url);
+}
+export const getLikesByUser = async (current: number, pageSize: number) => {
+    const url = `/api/v1/likes/user?current=${current}&pageSize=${pageSize}`;;
+    return await axios.get<IBackendRes<IModelPaginate<IUserR & { distance: number }>>>(url);
+}

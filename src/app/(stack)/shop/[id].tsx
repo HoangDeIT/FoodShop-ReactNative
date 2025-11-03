@@ -1,6 +1,6 @@
 import ProductOptionsSheet from "@/components/products/product.option.sheet";
 import { addToCart } from "@/db/services/cartService";
-import { getProducts, getProfileSeller } from "@/utils/customer.api";
+import { checkLikeStatus, getProducts, getProfileSeller, likeShopApi, unLikeShopApi } from "@/utils/customer.api";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, ScrollView, View } from "react-native";
@@ -23,10 +23,13 @@ export default function RestaurantScreen() {
     const fetchMenu = async () => {
         const res = await getProducts(1, 5, id as string);
         const res2 = await getProfileSeller(id as string);
+        const res3 = await checkLikeStatus(id as string);
         if (!res.error && res.data && res.data.result && !res2.error && res2.data) {
             setMenu(res.data.result);
             setMeta(res.data.meta);
             setSeller(res2.data);
+            setIsFavorite(Boolean(res3.data?.isLike));
+            console.log("?>>>>>>>>>>>>res3 ", res3)
         }
     }
     useEffect(() => {
@@ -72,8 +75,10 @@ export default function RestaurantScreen() {
         }
     };
 
-    const toggleFavorite = () => {
+    const toggleFavorite = async () => {
         setIsFavorite((prev) => !prev);
+        if (isFavorite) await unLikeShopApi(id as string)
+        else await likeShopApi(id as string)
         // TODO: Gọi API backend sau này:
         // if (!isFavorite) await api.post(`/favorites/${seller._id}`)
         // else await api.delete(`/favorites/${seller._id}`)

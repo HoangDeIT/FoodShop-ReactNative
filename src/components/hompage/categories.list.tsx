@@ -1,6 +1,7 @@
 import { getAllCategories } from "@/utils/customer.api";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { FlatList, Image, View } from "react-native";
+import { FlatList, Image, Pressable, View } from "react-native";
 import { Text } from "react-native-paper";
 
 const CategoriesList = () => {
@@ -46,7 +47,7 @@ const CategoriesList = () => {
                     }}
                 >
                     {item.map((cat) => (
-                        <View
+                        <Pressable
                             key={cat._id}
                             style={{
                                 alignItems: "center",
@@ -54,6 +55,7 @@ const CategoriesList = () => {
                                 width: 80,       // 👈 Chiều rộng cố định để text không đẩy lệch
                                 height: 100,     // 👈 Chiều cao cố định để các hàng đều nhau
                             }}
+                            onPress={() => router.push(`/(stack)/categories/${cat._id}`)}
                         >
                             {/* 🖼 icon URL từ API */}
                             <Image
@@ -80,7 +82,7 @@ const CategoriesList = () => {
                             >
                                 {cat.name}
                             </Text>
-                        </View>
+                        </Pressable>
                     ))}
                 </View>
             )}

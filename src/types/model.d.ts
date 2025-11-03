@@ -282,7 +282,7 @@ declare global {
         __v: number;
 
     }
-    export interface IReviewR {
+    interface IReviewR {
         _id: string;
         user: IUserR | string; // người viết review
         product: IProductR | string;
@@ -293,5 +293,45 @@ declare global {
         isDeleted: boolean;
         createdAt: string;
         updatedAt: string;
+    }
+    interface IProductSearchResult {
+        address: string;
+        user: IUserR;
+        products: IProductR;
+        distance: number; // đơn vị: km
+    }
+    interface ISellerWithProduct {
+        address: string;
+        distance: number; // km
+        averageRating: number;
+        totalReviews: number;
+        seller: IUserR
+        products: IProductR[]
+    }
+    interface ISellerWithProductType {
+        topSelling: {
+            _id: string;
+            seller: IUserR;
+            totalSold: number;
+            distance: number;
+        }[],
+        liked: {
+            _id: string;
+            seller: IUserR;
+            likeCount: number;
+            distance: number;
+        }[],
+        ordered: {
+            _id: string;
+            seller: IUserR;
+            totalOrders: number;
+            distance: number;
+        }[],
+        topRated: {
+            _id: string;
+            seller: IUserR;
+            avgRating: number;
+            distance: number;
+        }[]
     }
 }

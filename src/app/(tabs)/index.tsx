@@ -1,118 +1,37 @@
+import AppCarousel from "@/components/hompage/carousel";
 import CategoriesList from "@/components/hompage/categories.list";
-import ProductHorizontalList from "@/components/hompage/horizontal.products.list";
 import HorizontalShopList from "@/components/hompage/horizontal.shops.list";
+import ProductSearch from "@/components/hompage/search.bar";
 import ShopList from "@/components/list/shop.list";
 import { useCurrentApp } from "@/context/app.context";
-import { getSellers } from "@/utils/customer.api";
+import { getSellers, getSellersType } from "@/utils/customer.api";
 import { convertToShops, IShop } from "@/utils/function";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, FlatList, Pressable, RefreshControl, ScrollView, View } from "react-native";
-import { ActivityIndicator, Card, Searchbar, Text } from "react-native-paper";
+import { Alert, Pressable, RefreshControl, ScrollView, View } from "react-native";
+import { ActivityIndicator, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// ✅ Định nghĩa type theo API thật
-
-const restaurants = [
-    {
-        id: "r1",
-        name: "Trà Sữa Tocotoco - Lê Quý Đôn",
-        image:
-            "https://images.foody.vn/res/g107/1067096/prof/s640x400/file_restaurant_photo_2lrb_16602-1cf1f583-221111123503.jpg",
-        distance: "0.8 km",
-    },
-    {
-        id: "r2",
-        name: "Pizza Vị Thanh",
-        image:
-            "https://images.foody.vn/res/g102/1016410/prof/s640x400/file_restaurant_photo_rjmk_16404-7e9472d3-220129112530.jpg",
-        distance: "1.2 km",
-    },
-    {
-        id: "r3",
-        name: "Highlands Coffee - Vincom Vị Thanh",
-        image:
-            "https://images.foody.vn/res/g108/1072623/prof/s640x400/file_restaurant_photo_4urc_16608-7d9d4df3-221118095904.jpg",
-        distance: "2.4 km",
-    },
-    {
-        id: "r4",
-        name: "Bánh Mì PewPew",
-        image:
-            "https://images.foody.vn/res/g96/956148/prof/s640x400/file_restaurant_photo_4r8r_16043-9d8cc3fc-210731134839.jpg",
-        distance: "1.5 km",
-    },
-];
-
+const transformSellers = (data: any[]) => {
+    return data.map((item, index) => ({
+        id: `${item.seller?._id}`, // tạo id tuần tự r1, r2, r3...
+        name: item.seller?.name || "Không rõ tên",
+        image: item.seller?.avatar
+            ? `${item.seller.avatar}`
+            : "https://via.placeholder.com/640x400?text=No+Image",
+        distance: `${item.distance.toFixed(1)} km`,
+    }));
+}
 // 🍔 Fake data cho sản phẩm
-const products = [
-    {
-        id: "p1",
-        name: "Trà Sữa Truyền Thống",
-        image:
-            "https://images.foody.vn/res/g105/1045224/prof/s640x400/file_restaurant_photo_h4pt_16267-6324f365-220119121655.jpg",
-        price: 30000,
-    },
-    {
-        id: "p2",
-        name: "Mì Cay Hàn Quốc Cấp 3",
-        image:
-            "https://images.foody.vn/res/g112/1111568/prof/s640x400/file_restaurant_photo_jt4a_16887-5ab7e72b-240526171018.jpg",
-        price: 45000,
-    },
-    {
-        id: "p3",
-        name: "Cà Phê Sữa Đá",
-        image:
-            "https://images.foody.vn/res/g108/1072623/prof/s640x400/file_restaurant_photo_4urc_16608-7d9d4df3-221118095904.jpg",
-        price: 25000,
-    },
-    {
-        id: "p4",
-        name: "Bánh Mì Thịt Nướng",
-        image:
-            "https://images.foody.vn/res/g111/1103629/prof/s640x400/file_restaurant_photo_kbxe_16847-1fd4180a-240515140512.jpg",
-        price: 20000,
-    },
-    {
-        id: "p5",
-        name: "Trà Đào Cam Sả",
-        image:
-            "https://images.foody.vn/res/g110/1094742/prof/s640x400/file_restaurant_photo_5oer_16772-30b0acb3-230224151236.jpg",
-        price: 39000,
-    },
-    {
-        id: "p6",
-        name: "Cơm Tấm Sườn Bì Chả",
-        image:
-            "https://images.foody.vn/res/g101/1006881/prof/s640x400/file_restaurant_photo_efav_16203-5c6a7333-220504141529.jpg",
-        price: 55000,
-    },
-    {
-        id: "p7",
-        name: "Phở Bò Tái Nạm",
-        image:
-            "https://images.foody.vn/res/g100/997570/prof/s640x400/file_restaurant_photo_lbd0_16153-309e5426-210309105727.jpg",
-        price: 60000,
-    },
-    {
-        id: "p8",
-        name: "Sinh Tố Bơ Sữa",
-        image:
-            "https://images.foody.vn/res/g96/958547/prof/s640x400/file_restaurant_photo_wz9j_16114-2c7342f0-210120094409.jpg",
-        price: 35000,
-    },
-];
 
 const HomePage = () => {
-    const [searchQuery, setSearchQuery] = useState("");
     const [refreshing, setRefreshing] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
     const { setAppState, appState } = useCurrentApp();
     const [shops, setShops] = useState<IShop[]>([]);
     const [meta, setMeta] = useState<IMeta | null>(null);
-
+    const [typeSeller, setTypeSeller] = useState<ISellerWithProductType>();
     // ✅ Đăng xuất
     const handleLogout = () => {
         Alert.alert("Đăng xuất", "Bạn chắc chắn đăng xuất người dùng ?", [
@@ -130,11 +49,12 @@ const HomePage = () => {
         try {
             // Gọi API
             const res = await getSellers(5, 1, 10); // ví dụ: bán kính 5km, trang 1, 10 seller mỗi trang
-
+            const res2 = await getSellersType();
             // Kiểm tra kết quả trả về
-            if (res?.data && res?.data?.result) {
+            if (res?.data && res?.data?.result && res2?.data) {
                 setShops(convertToShops(res.data.result));  // danh sách seller
                 setMeta(res.data.meta);        // phân trang
+                setTypeSeller(res2.data);
             } else {
                 setShops([]);
                 setMeta(null);
@@ -195,6 +115,7 @@ const HomePage = () => {
                     />
                 }
                 onScroll={handleScroll}
+                keyboardShouldPersistTaps="handled"
             >
                 {/* Header */}
                 <View style={{ backgroundColor: "#ff6d00", padding: 12 }}>
@@ -206,30 +127,15 @@ const HomePage = () => {
                             {appState?.location?.address || "Đang tìm vị trí"}
                         </Text>
                     </Pressable>
-                    <Searchbar
-                        placeholder="Cơm chay, Bún Thái Giảm 40.000đ"
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        iconColor="#ff6d00"
-                        style={{
-                            marginTop: 10,
-                            borderRadius: 10,
-                            elevation: 0,
-                        }}
-                    />
+                    <ProductSearch />
                 </View>
                 {/* Banner */}
-                <Card style={{ margin: 12, borderRadius: 10 }}>
-                    <Card.Cover source={{ uri: "https://down-vn.img.susercontent.com/file/vn-11134207-7r98o-ly0nmg0we5x7a6", }} />
-                    <Card.Content>
-                        <Text style={{ marginTop: 6, fontWeight: "bold" }}> Thử ngay quán mới - Giảm tới 30.000đ </Text>
-                    </Card.Content>
-                </Card>
+                <AppCarousel />
                 {/* ✅ Categories - 2 hàng cuộn ngang */}
 
                 <CategoriesList />
                 {/* ✅ Bộ sưu tập */}
-                <View style={{ paddingHorizontal: 12, marginTop: 10 }}>
+                {/* <View style={{ paddingHorizontal: 12, marginTop: 10 }}>
                     <Text style={{ fontWeight: "bold", fontSize: 16, marginBottom: 10 }}>
                         Bộ sưu tập
                     </Text>
@@ -281,24 +187,37 @@ const HomePage = () => {
                             </Card>
                         )}
                     />
-                </View>
-                <HorizontalShopList
-                    name="Restaurants"
-                    description="Quán ăn gần bạn 🍜"
-                    data={restaurants}
-                    onSeeAll={() => console.log("Xem tất cả quán ăn")}
-                />
+                </View> */}
 
-                <ProductHorizontalList
-                    title="Danh sách sản phẩm"
-                    subtitle="Món bán chạy nhất hôm nay 🍔"
-                    data={products}
-                    onSeeAll={() => console.log("Xem tất cả sản phẩm")}
-                />
-                {/* <ProductList
-                    data={products}
-                    scrollEnabled={false}
-                /> */}
+                {typeSeller && (
+                    <>
+                        <HorizontalShopList
+                            name="Restaurants"
+                            description="Quán ăn có top rating 🍜"
+                            data={transformSellers(typeSeller?.topRated!)}
+                            onSeeAll={() => console.log("Xem tất cả quán ăn")}
+                        />
+                        <HorizontalShopList
+                            name="Restaurants"
+                            description="Quán ăn bạn đã thích 🍜"
+                            data={transformSellers(typeSeller?.liked!)}
+                            onSeeAll={() => console.log("Xem tất cả quán ăn")}
+                        />
+                        <HorizontalShopList
+                            name="Restaurants"
+                            description="Quán ăn bạn đã đặt 🍜"
+                            data={transformSellers(typeSeller?.ordered!)}
+                            onSeeAll={() => console.log("Xem tất cả quán ăn")}
+                        />
+                        <HorizontalShopList
+                            name="Restaurants"
+                            description="Quán ăn bán chạy nhất 🍜"
+                            data={transformSellers(typeSeller?.topSelling!)}
+                            onSeeAll={() => console.log("Xem tất cả quán ăn")}
+                        />
+                    </>
+                )}
+
                 <ShopList
                     data={shops}
 

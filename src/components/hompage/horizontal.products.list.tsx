@@ -45,9 +45,9 @@ export default function ProductHorizontalList({
                 <Text style={{ fontWeight: "bold", fontSize: 16, color: "#ff6d00" }}>
                     {title}
                 </Text>
-                <TouchableOpacity onPress={onSeeAll}>
+                {/* <TouchableOpacity onPress={onSeeAll}>
                     <Text style={{ color: "#555" }}>Xem tất cả ›</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
             </View>
 
             {subtitle && (
