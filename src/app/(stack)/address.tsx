@@ -8,7 +8,6 @@ import { useRouter } from "expo-router";
 import * as React from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { Button, SegmentedButtons, useTheme } from "react-native-paper";
-
 export default function AddressScreen() {
     const router = useRouter();
     const theme = useTheme();
@@ -66,7 +65,6 @@ export default function AddressScreen() {
             setLoading(false);
         }
     };
-
     return (
         <View style={{ flex: 1, backgroundColor: "#fff" }}>
             <ScrollView contentContainerStyle={styles.scrollContent}>

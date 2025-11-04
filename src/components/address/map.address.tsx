@@ -1,8 +1,8 @@
 import * as Location from "expo-location";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
-import MapView, { MapPressEvent, Marker } from "react-native-maps";
-import { ActivityIndicator, Card, IconButton, Text, TextInput } from "react-native-paper";
+import { ActivityIndicator, Card, IconButton, TextInput } from "react-native-paper";
+import { WebView } from "react-native-webview";
 
 interface Props {
     address: string;
@@ -22,14 +22,8 @@ export default function MapAddress({
     setLng,
 }: Props) {
     const [loading, setLoading] = useState(false);
-    const [region, setRegion] = useState({
-        latitude: lat ? parseFloat(lat) : 10.0301,
-        longitude: lng ? parseFloat(lng) : 105.7722,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-    });
+    const webRef = useRef<WebView>(null);
 
-    // 🧭 Reverse geocode khi lat/lng thay đổi
     const fetchAddress = async (latitude: number, longitude: number) => {
         try {
             setLoading(true);
@@ -49,87 +43,95 @@ export default function MapAddress({
         }
     };
 
-    // Khi user chạm chọn vị trí mới trên map
-    const handleMapPress = async (e: MapPressEvent) => {
-        const { latitude, longitude } = e.nativeEvent.coordinate;
-        setLat(latitude.toString());
-        setLng(longitude.toString());
-        setRegion({
-            ...region,
-            latitude,
-            longitude,
-        });
-        await fetchAddress(latitude, longitude);
-    };
-
-    // Khi vào trang mà chưa có lat/lng, tự động lấy vị trí hiện tại
+    // 🧭 Lấy vị trí hiện tại nếu chưa có
     useEffect(() => {
         (async () => {
             if (!lat || !lng) {
-                try {
-                    const { status } = await Location.requestForegroundPermissionsAsync();
-                    if (status !== "granted") return;
-
-                    const pos = await Location.getCurrentPositionAsync({
-                        accuracy: Location.Accuracy.High,
-                    });
-
-                    const { latitude, longitude } = pos.coords;
-                    setLat(latitude.toString());
-                    setLng(longitude.toString());
-                    setRegion({
-                        ...region,
-                        latitude,
-                        longitude,
-                    });
-                    await fetchAddress(latitude, longitude);
-                } catch (err) {
-                    console.error("📍 Error getting current location:", err);
-                }
+                const { status } = await Location.requestForegroundPermissionsAsync();
+                if (status !== "granted") return;
+                const pos = await Location.getCurrentPositionAsync({
+                    accuracy: Location.Accuracy.High,
+                });
+                setLat(pos.coords.latitude.toString());
+                setLng(pos.coords.longitude.toString());
+                await fetchAddress(pos.coords.latitude, pos.coords.longitude);
             }
         })();
     }, []);
 
-    const latNum = parseFloat(lat);
-    const lngNum = parseFloat(lng);
-    const hasCoords = !isNaN(latNum) && !isNaN(lngNum);
+    const handleMessage = (event: any) => {
+        try {
+            const { lat, lng } = JSON.parse(event.nativeEvent.data);
+            setLat(lat.toString());
+            setLng(lng.toString());
+            fetchAddress(lat, lng);
+        } catch (err) {
+            console.error("📨 handleMessage error:", err);
+        }
+    };
+
+    const latNum = parseFloat(lat) || 10.0301;
+    const lngNum = parseFloat(lng) || 105.7722;
+
+    // 🧩 HTML hiển thị Leaflet map (OpenStreetMap)
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+      <style>
+        html, body, #map { height: 100%; margin: 0; padding: 0; }
+        .marker {
+          width: 20px; height: 20px;
+          background-color: #ff6d00;
+          border: 2px solid white;
+          border-radius: 50%;
+        }
+      </style>
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    </head>
+    <body>
+      <div id="map"></div>
+      <script>
+        const map = L.map('map').setView([${latNum}, ${lngNum}], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        const marker = L.marker([${latNum}, ${lngNum}], { draggable: true }).addTo(map);
+
+        marker.on('dragend', function (e) {
+          const pos = marker.getLatLng();
+          window.ReactNativeWebView.postMessage(JSON.stringify(pos));
+        });
+
+        map.on('click', function (e) {
+          marker.setLatLng(e.latlng);
+          window.ReactNativeWebView.postMessage(JSON.stringify(e.latlng));
+        });
+      </script>
+    </body>
+    </html>
+  `;
 
     return (
         <Card style={styles.card}>
             <Card.Title
                 title="Chọn vị trí trên bản đồ"
-                subtitle="Chạm để đặt ghim, địa chỉ sẽ tự điền"
+                subtitle="Bản đồ OpenStreetMap (Leaflet – chạy 100% trong Expo)"
                 left={(p) => <IconButton {...p} icon="map-marker" />}
             />
             <Card.Content style={{ gap: 10 }}>
                 <View style={styles.mapContainer}>
-                    {hasCoords ? (
-                        <MapView
-                            style={styles.map}
-                            region={region}
-                            onPress={handleMapPress}
-                            showsUserLocation
-                            showsMyLocationButton={true}
-                        >
-                            <Marker
-                                coordinate={{ latitude: latNum, longitude: lngNum }}
-                                draggable
-                                onDragEnd={(e) => {
-                                    const { latitude, longitude } = e.nativeEvent.coordinate;
-                                    setLat(latitude.toString());
-                                    setLng(longitude.toString());
-                                    fetchAddress(latitude, longitude);
-                                }}
-                                title="Vị trí đã chọn"
-                                description={address || "Chạm vào bản đồ để chọn vị trí"}
-                            />
-                        </MapView>
-                    ) : (
-                        <View style={styles.mapPlaceholder}>
-                            <IconButton icon="map-marker" size={28} />
-                            <Text style={{ color: "#777" }}>Đang tải bản đồ...</Text>
-                        </View>
-                    )}
+                    <WebView
+                        ref={webRef}
+                        originWhitelist={["*"]}
+                        source={{ html }}
+                        onMessage={handleMessage}
+                        style={styles.map}
+                    />
                     {loading && (
                         <View style={styles.overlay}>
                             <ActivityIndicator size="small" color="#ff6d00" />
@@ -155,26 +157,13 @@ export default function MapAddress({
 const styles = StyleSheet.create({
     card: { borderRadius: 18, elevation: 1 },
     mapContainer: {
-        height: 200,
+        height: 240,
         borderRadius: 14,
         overflow: "hidden",
         borderWidth: 1,
         borderColor: "#ddd",
     },
-    map: {
-        width: "100%",
-        height: "100%",
-    },
-    button: { borderRadius: 12, backgroundColor: "#ff6d00" },
-    mapPlaceholder: {
-        height: 200,
-        borderWidth: 1,
-        borderColor: "#ddd",
-        borderStyle: "dashed",
-        borderRadius: 14,
-        alignItems: "center",
-        justifyContent: "center",
-    },
+    map: { flex: 1 },
     overlay: {
         position: "absolute",
         top: 0,
@@ -183,6 +172,6 @@ const styles = StyleSheet.create({
         right: 0,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "rgba(255,255,255,0.5)",
+        backgroundColor: "rgba(255,255,255,0.4)",
     },
 });

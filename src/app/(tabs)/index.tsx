@@ -6,13 +6,13 @@ import ShopList from "@/components/list/shop.list";
 import { useCurrentApp } from "@/context/app.context";
 import { getSellers, getSellersType } from "@/utils/customer.api";
 import { convertToShops, IShop } from "@/utils/function";
+import { listenNotificationEvents, registerForPushNotificationsAsync } from "@/utils/notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Pressable, RefreshControl, ScrollView, View } from "react-native";
-import { ActivityIndicator, Text } from "react-native-paper";
+import { ActivityIndicator, Snackbar, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-
 const transformSellers = (data: any[]) => {
     return data.map((item, index) => ({
         id: `${item.seller?._id}`, // tạo id tuần tự r1, r2, r3...
@@ -31,6 +31,10 @@ const HomePage = () => {
     const { setAppState, appState } = useCurrentApp();
     const [shops, setShops] = useState<IShop[]>([]);
     const [meta, setMeta] = useState<IMeta | null>(null);
+    const [snackbar, setSnackbar] = useState({
+        visible: false,
+        message: "",
+    });
     const [typeSeller, setTypeSeller] = useState<ISellerWithProductType>();
     // ✅ Đăng xuất
     const handleLogout = () => {
@@ -102,6 +106,12 @@ const HomePage = () => {
     useEffect(() => {
         fetchSellers();
     }, []);
+    useEffect(() => {
+
+        if (!appState?.access_token) return;
+        registerForPushNotificationsAsync(appState!.access_token!);
+        listenNotificationEvents();
+    }, [appState]);
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
             <ScrollView style={{ flex: 1, backgroundColor: "#fff" }}
@@ -229,6 +239,14 @@ const HomePage = () => {
                     </View>
                 )}
             </ScrollView>
+            <Snackbar
+                visible={snackbar.visible}
+                onDismiss={() => setSnackbar({ visible: false, message: "" })}
+                duration={2500}
+                style={{ backgroundColor: "rgba(0,0,0,0.85)" }}
+            >
+                {snackbar.message}
+            </Snackbar>
         </SafeAreaView>
     );
 };

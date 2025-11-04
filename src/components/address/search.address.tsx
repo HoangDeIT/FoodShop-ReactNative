@@ -1,8 +1,8 @@
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
-import MapView, { Marker, UrlTile } from "react-native-maps";
 import { ActivityIndicator, Card, IconButton, Text, TextInput } from "react-native-paper";
+import { WebView } from "react-native-webview";
 
 interface Props {
     address: string;
@@ -21,19 +21,19 @@ export default function SearchAddress({
     setLat,
     setLng,
 }: Props) {
-    const mapRef = useRef<MapView>(null);
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [debouncedQuery, setDebouncedQuery] = useState(query);
+    const webRef = useRef<WebView>(null);
 
-    // 🕓 Debounce mỗi 500ms
+    // 🕓 Debounce
     useEffect(() => {
-        const handler = setTimeout(() => setDebouncedQuery(query), 500);
+        const handler = setTimeout(() => setDebouncedQuery(query), 600);
         return () => clearTimeout(handler);
     }, [query]);
 
-    // ⚡ Gọi API khi debouncedQuery thay đổi
+    // 🔍 Tìm kiếm qua Nominatim (OpenStreetMap)
     useEffect(() => {
         if (debouncedQuery.length < 3) {
             setResults([]);
@@ -43,44 +43,19 @@ export default function SearchAddress({
         const search = async () => {
             try {
                 setLoading(true);
-                const latNum = parseFloat(lat) || 10.0452; // fallback Cần Thơ
-                const lngNum = parseFloat(lng) || 105.7469;
-                const delta = 0.5; // vùng tìm quanh 10km
-                const viewbox = [
-                    lngNum - delta,
-                    latNum + delta,
-                    lngNum + delta,
-                    latNum - delta,
-                ].join(",");
-
-                // const res = await axios.get("https://nominatim.openstreetmap.org/search", {
-                //     params: {
-                //         format: "json",
-                //         q: debouncedQuery,
-                //         countrycodes: "vn",
-                //         addressdetails: 1,
-                //         limit: 8,
-                //         viewbox,
-                //         bounded: 0, // chỉ tìm trong viewbox
-                //     },
-                //     headers: { "User-Agent": "FoodShopApp/1.0 (https://expo.dev)" },
-                // });
                 const res = await axios.get("https://nominatim.openstreetmap.org/search", {
                     params: {
-                        format: "json",
                         q: debouncedQuery,
-                        countrycodes: "vn",
+                        format: "json",
                         addressdetails: 1,
-                        limit: 8,
-                        lat: lat || undefined,
-                        lon: lng || undefined, // chỉ bias nhẹ
+                        limit: 6,
+                        countrycodes: "vn",
                     },
-                    headers: { "User-Agent": "FoodShopApp/1.0 (https://expo.dev)" },
+                    headers: { "User-Agent": "FoodShopApp/1.0 (expo.dev)" },
                 });
-
                 setResults(res.data || []);
             } catch (err) {
-                console.error("❌ Lỗi tìm địa chỉ:", err);
+                console.error("❌ Lỗi tìm kiếm:", err);
             } finally {
                 setLoading(false);
             }
@@ -89,7 +64,7 @@ export default function SearchAddress({
         search();
     }, [debouncedQuery]);
 
-
+    // 🗺️ Khi chọn địa chỉ
     const handleSelect = (item: any) => {
         const { lat, lon, display_name } = item;
         setLat(lat.toString());
@@ -97,30 +72,89 @@ export default function SearchAddress({
         setAddress(display_name);
         setResults([]);
         setQuery(display_name);
-        mapRef.current?.animateToRegion({
-            latitude: parseFloat(lat),
-            longitude: parseFloat(lon),
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-        });
+
+        // Gửi lệnh di chuyển marker tới WebView
+        webRef.current?.postMessage(JSON.stringify({ lat, lng: lon }));
     };
 
-    const latNum = parseFloat(lat);
-    const lngNum = parseFloat(lng);
-    const hasCoords = !isNaN(latNum) && !isNaN(lngNum);
+    const latNum = parseFloat(lat) || 10.0301;
+    const lngNum = parseFloat(lng) || 105.7722;
+
+    // 🧩 HTML hiển thị Leaflet map
+    const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+        <style>
+          html, body, #map { height: 100%; margin: 0; padding: 0; }
+          .leaflet-control-attribution { display: none; }
+        </style>
+        <link
+          rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+      </head>
+      <body>
+        <div id="map"></div>
+        <script>
+          const map = L.map('map').setView([${latNum}, ${lngNum}], 15);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+          }).addTo(map);
+
+          const marker = L.marker([${latNum}, ${lngNum}], { draggable: true }).addTo(map);
+          
+          marker.on('dragend', (e) => {
+            const pos = marker.getLatLng();
+            window.ReactNativeWebView.postMessage(JSON.stringify(pos));
+          });
+
+          map.on('click', (e) => {
+            marker.setLatLng(e.latlng);
+            window.ReactNativeWebView.postMessage(JSON.stringify(e.latlng));
+          });
+
+          // Nhận lệnh từ React Native để di chuyển marker
+          document.addEventListener('message', function(event) {
+            try {
+              const { lat, lng } = JSON.parse(event.data);
+              marker.setLatLng([lat, lng]);
+              map.flyTo([lat, lng], 15);
+            } catch (err) {
+              console.error('Parse message error:', err);
+            }
+          });
+        </script>
+      </body>
+    </html>
+  `;
+
+    // 📩 Nhận tọa độ từ WebView
+    const handleMessage = (event: any) => {
+        try {
+            const { lat, lng } = JSON.parse(event.nativeEvent.data);
+            setLat(lat.toString());
+            setLng(lng.toString());
+        } catch (err) {
+            console.error("handleMessage error:", err);
+        }
+    };
 
     return (
         <Card style={styles.card}>
             <Card.Title
                 title="Tìm địa chỉ"
-                subtitle="Dữ liệu từ OpenStreetMap (ưu tiên gần vị trí hiện tại)"
+                subtitle="Dữ liệu từ OpenStreetMap (Leaflet, không cần SDK Google)"
                 left={(p) => <IconButton {...p} icon="map-search" />}
             />
             <Card.Content style={{ gap: 10 }}>
-                {/* Ô nhập tìm kiếm */}
-                <View style={{ zIndex: 10 }}>
+                {/* Ô tìm kiếm */}
+                <View style={{ zIndex: 20 }}>
                     <TextInput
-                        placeholder="Nhập địa chỉ hoặc địa điểm (VD: bệnh viện, quán ăn...)"
+                        placeholder="Nhập địa chỉ hoặc địa điểm (VD: Bệnh viện, quán ăn...)"
                         mode="outlined"
                         value={query}
                         onChangeText={setQuery}
@@ -131,10 +165,9 @@ export default function SearchAddress({
                             ) : undefined
                         }
                     />
-
-                    {/* Kết quả gợi ý — dùng ScrollView để tránh cảnh báo VirtualizedList */}
+                    {/* Danh sách kết quả */}
                     {results.length > 0 && (
-                        <ScrollView style={styles.suggestionBox} nestedScrollEnabled>
+                        <ScrollView style={styles.suggestionBox}>
                             {results.map((item) => (
                                 <TouchableOpacity
                                     key={item.place_id}
@@ -148,38 +181,23 @@ export default function SearchAddress({
                     )}
                 </View>
 
-                {/* Lat/Lng */}
+                {/* Lat/Lng hiển thị */}
                 <TextInput label="Địa chỉ" mode="outlined" value={address} onChangeText={setAddress} />
                 <View style={{ flexDirection: "row", gap: 8 }}>
                     <TextInput label="Lat" mode="outlined" style={{ flex: 1 }} value={lat} editable={false} />
                     <TextInput label="Lng" mode="outlined" style={{ flex: 1 }} value={lng} editable={false} />
                 </View>
 
-                {/* Bản đồ */}
-                {hasCoords ? (
-                    <View style={styles.mapContainer}>
-                        <MapView
-                            ref={mapRef}
-                            style={styles.map}
-                            region={{
-                                latitude: latNum,
-                                longitude: lngNum,
-                                latitudeDelta: 0.01,
-                                longitudeDelta: 0.01,
-                            }}
-                            scrollEnabled={false}
-                            zoomEnabled={false}
-                        >
-                            <UrlTile urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" maximumZ={19} />
-                            <Marker coordinate={{ latitude: latNum, longitude: lngNum }} title={address} />
-                        </MapView>
-                    </View>
-                ) : (
-                    <View style={styles.mapPlaceholder}>
-                        <IconButton icon="map" size={26} />
-                        <Text style={{ color: "#777" }}>Nhập địa chỉ để hiển thị bản đồ</Text>
-                    </View>
-                )}
+                {/* Map View */}
+                <View style={styles.mapContainer}>
+                    <WebView
+                        ref={webRef}
+                        originWhitelist={["*"]}
+                        source={{ html }}
+                        onMessage={handleMessage}
+                        style={styles.map}
+                    />
+                </View>
             </Card.Content>
         </Card>
     );
@@ -203,20 +221,11 @@ const styles = StyleSheet.create({
         borderBottomColor: "#eee",
     },
     mapContainer: {
-        height: 180,
+        height: 240,
         borderRadius: 14,
         overflow: "hidden",
         borderWidth: 1,
         borderColor: "#ddd",
     },
-    map: { width: "100%", height: "100%" },
-    mapPlaceholder: {
-        height: 160,
-        borderWidth: 1,
-        borderColor: "#ddd",
-        borderStyle: "dashed",
-        borderRadius: 14,
-        alignItems: "center",
-        justifyContent: "center",
-    },
+    map: { flex: 1 },
 });

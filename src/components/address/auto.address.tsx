@@ -1,10 +1,11 @@
 import { useCurrentApp } from "@/context/app.context";
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
-import MapView, { Marker } from "react-native-maps"; // ✅ import map thật
 import { ActivityIndicator, Button, Card, IconButton, Text, TextInput } from "react-native-paper";
+import { WebView } from "react-native-webview";
+
 interface Props {
     address: string;
     setAddress: (val: string) => void;
@@ -25,9 +26,9 @@ export default function AutoAddress({
     const { setAppState } = useCurrentApp();
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<string>("");
+    const webRef = useRef<WebView>(null);
 
-    // 🧭 Lấy vị trí thật
-    // 🧭 Lấy vị trí thật
+    // 🧭 Lấy vị trí hiện tại
     const handleAutoLocate = async () => {
         try {
             setLoading(true);
@@ -75,15 +76,63 @@ export default function AutoAddress({
         }
     };
 
-    const latNum = parseFloat(lat);
-    const lngNum = parseFloat(lng);
-    const hasCoords = !isNaN(latNum) && !isNaN(lngNum);
+    // 🗺️ HTML hiển thị bản đồ OpenStreetMap qua Leaflet
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+      <style>
+        html, body, #map { height: 100%; margin: 0; padding: 0; }
+      </style>
+      <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      />
+      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    </head>
+    <body>
+      <div id="map"></div>
+      <script>
+        const lat = ${lat || 10.0301};
+        const lng = ${lng || 105.7722};
+
+        const map = L.map('map').setView([lat, lng], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+        marker.on('dragend', (e) => {
+          const pos = marker.getLatLng();
+          window.ReactNativeWebView.postMessage(JSON.stringify(pos));
+        });
+
+        map.on('click', function(e) {
+          marker.setLatLng(e.latlng);
+          window.ReactNativeWebView.postMessage(JSON.stringify(e.latlng));
+        });
+      </script>
+    </body>
+    </html>
+  `;
+
+    // 📨 Nhận tọa độ từ WebView
+    const handleMessage = (event: any) => {
+        try {
+            const { lat, lng } = JSON.parse(event.nativeEvent.data);
+            setLat(lat.toString());
+            setLng(lng.toString());
+        } catch (e) {
+            console.error("Lỗi parse message từ webview:", e);
+        }
+    };
 
     return (
         <Card style={styles.card}>
             <Card.Title
                 title="Lấy vị trí tự động"
-                subtitle="Ứng dụng sẽ tự định vị GPS của bạn"
+                subtitle="Bản đồ OpenStreetMap (Leaflet – không cần Google SDK)"
                 left={(p) => <IconButton {...p} icon="crosshairs-gps" />}
             />
             <Card.Content style={{ gap: 10 }}>
@@ -120,35 +169,16 @@ export default function AutoAddress({
                     <TextInput label="Lng" mode="outlined" style={{ flex: 1 }} value={lng} editable={false} />
                 </View>
 
-                {/* 🗺️ Map thật hiển thị vị trí người dùng */}
-                {hasCoords ? (
-                    <View style={styles.mapContainer}>
-                        <MapView
-                            style={styles.map}
-                            region={{
-                                latitude: latNum,
-                                longitude: lngNum,
-                                latitudeDelta: 0.01,
-                                longitudeDelta: 0.01,
-                            }}
-                            showsUserLocation
-                            showsMyLocationButton={false}
-                            scrollEnabled={false}
-                            zoomEnabled={false}
-                        >
-                            <Marker
-                                coordinate={{ latitude: latNum, longitude: lngNum }}
-                                title="Vị trí của bạn"
-                                description={address}
-                            />
-                        </MapView>
-                    </View>
-                ) : (
-                    <View style={styles.mapPlaceholder}>
-                        <IconButton icon="map-marker" size={28} />
-                        <Text style={{ color: "#777" }}>Vị trí của bạn trên bản đồ</Text>
-                    </View>
-                )}
+                {/* 🗺️ Bản đồ OpenStreetMap qua Leaflet */}
+                <View style={styles.mapContainer}>
+                    <WebView
+                        ref={webRef}
+                        originWhitelist={["*"]}
+                        source={{ html }}
+                        onMessage={handleMessage}
+                        style={styles.map}
+                    />
+                </View>
             </Card.Content>
         </Card>
     );
@@ -160,21 +190,9 @@ const styles = StyleSheet.create({
     mapContainer: {
         borderRadius: 14,
         overflow: "hidden",
-        height: 180,
+        height: 200,
         borderWidth: 1,
         borderColor: "#ddd",
     },
-    map: {
-        width: "100%",
-        height: "100%",
-    },
-    mapPlaceholder: {
-        height: 160,
-        borderWidth: 1,
-        borderColor: "#ddd",
-        borderStyle: "dashed",
-        borderRadius: 14,
-        alignItems: "center",
-        justifyContent: "center",
-    },
+    map: { flex: 1 },
 });
