@@ -1,5 +1,6 @@
 // src/utils/notifications.ts
 import axios from 'axios';
+import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
@@ -19,6 +20,13 @@ Notifications.setNotificationHandler({
 // Đăng ký và gửi token về server
 export async function registerForPushNotificationsAsync(access_token: string) {
     try {
+        const isExpoGo = Application.applicationId === 'host.exp.exponent';
+        if (isExpoGo) {
+            console.warn('⚠️ Không thể đăng ký push notifications khi chạy trong Expo Go.');
+            alert('Không thể nhận thông báo trong Expo Go. Hãy build app riêng để dùng!');
+            return;
+        }
+
         if (!Device.isDevice) {
             alert('Phải dùng thiết bị thật để nhận thông báo!');
             return;

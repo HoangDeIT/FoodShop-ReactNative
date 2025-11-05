@@ -1,9 +1,26 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { ScrollView, View } from "react-native";
+import * as SQLite from "expo-sqlite";
+import { Alert, ScrollView, View } from "react-native";
 import { Avatar, Divider, List, Text } from "react-native-paper";
-
 export default function AccountScreen() {
     const router = useRouter();
+    const handleLogout = () => {
+        Alert.alert("Đăng xuất", "Bạn chắc chắn đăng xuất người dùng ?", [
+            { text: "Hủy", style: "cancel" },
+            {
+                text: "Xác nhận",
+                onPress: async () => {
+                    await AsyncStorage.clear();
+                    const db = await SQLite.openDatabaseAsync("app.db");
+                    await db.execAsync("DELETE FROM cart_items;");
+                    await db.execAsync("DELETE FROM cart_shops;");
+
+                    router.replace("/(auth)/login");
+                },
+            },
+        ]);
+    };
     return (
         <ScrollView style={{ flex: 1, backgroundColor: "#fff" }}>
             <View style={{ alignItems: "center", marginTop: 20 }}>
@@ -41,6 +58,7 @@ export default function AccountScreen() {
             />
             <List.Item
                 title="Đăng xuất"
+                onPress={() => handleLogout()}
                 left={(props) => <List.Icon {...props} icon="logout" color="#ff6d00" />}
             />
         </ScrollView>

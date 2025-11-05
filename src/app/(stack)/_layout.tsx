@@ -43,6 +43,12 @@ export default function StackLayout() {
                 }}
             />
             <Stack.Screen
+                name="chat/[id]"
+                options={{
+                    headerShown: false
+                }}
+            />
+            <Stack.Screen
                 name="address"
                 options={{
                     title: "Danh mục sản phẩm",

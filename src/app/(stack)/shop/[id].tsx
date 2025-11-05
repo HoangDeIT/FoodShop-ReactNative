@@ -1,5 +1,6 @@
 import ProductOptionsSheet from "@/components/products/product.option.sheet";
 import { addToCart } from "@/db/services/cartService";
+import { createConversation } from "@/utils/chats.api";
 import { checkLikeStatus, getProducts, getProfileSeller, likeShopApi, unLikeShopApi } from "@/utils/customer.api";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -109,6 +110,24 @@ export default function RestaurantScreen() {
                     }}
                 />
 
+                {/* 💬 Nút chat */}
+                <IconButton
+                    icon="chat-outline"
+                    iconColor="#fff"
+                    size={26}
+                    onPress={async () => {
+                        const res = await createConversation(id as string);
+                        if (res.error) setSnackbar({ visible: true, message: res.message })
+                        router.push(`/(stack)/chat/${res?.data?._id}`)
+                    }}
+                    style={{
+                        position: "absolute",
+                        bottom: 10,
+                        right: 10,
+                        backgroundColor: "#1677ff",
+                    }}
+                />
+
                 <Card.Content style={{ marginTop: 10 }}>
                     <Text variant="titleLarge" style={{ fontWeight: "bold" }}>
                         {seller?.name}
@@ -116,16 +135,6 @@ export default function RestaurantScreen() {
                     <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
                         <Text>⭐ 4.5 (100+ Bình luận) · </Text>
                         <Text>30 phút</Text>
-                    </View>
-
-                    {/* Ưu đãi */}
-                    <View style={{ marginTop: 8, flexDirection: "column", gap: 4 }}>
-                        {/* <Chip icon="tag" compact>
-                            Giảm 19% cho đơn từ 300.000đ
-                        </Chip>
-                        <Chip icon="tag" compact>
-                            Giảm 21% cho đơn từ 400.000đ
-                        </Chip> */}
                     </View>
                 </Card.Content>
             </Card>

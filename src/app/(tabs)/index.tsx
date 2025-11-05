@@ -7,11 +7,10 @@ import { useCurrentApp } from "@/context/app.context";
 import { getSellers, getSellersType } from "@/utils/customer.api";
 import { convertToShops, IShop } from "@/utils/function";
 import { listenNotificationEvents, registerForPushNotificationsAsync } from "@/utils/notifications";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, View } from "react-native";
-import { ActivityIndicator, Snackbar, Text } from "react-native-paper";
+import { Pressable, RefreshControl, ScrollView, View } from "react-native";
+import { ActivityIndicator, IconButton, Snackbar, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 const transformSellers = (data: any[]) => {
     return data.map((item, index) => ({
@@ -37,18 +36,8 @@ const HomePage = () => {
     });
     const [typeSeller, setTypeSeller] = useState<ISellerWithProductType>();
     // ✅ Đăng xuất
-    const handleLogout = () => {
-        Alert.alert("Đăng xuất", "Bạn chắc chắn đăng xuất người dùng ?", [
-            { text: "Hủy", style: "cancel" },
-            {
-                text: "Xác nhận",
-                onPress: async () => {
-                    await AsyncStorage.clear();
-                    router.replace("/(auth)/login");
-                },
-            },
-        ]);
-    };
+
+
     const fetchSellers = async () => {
         try {
             // Gọi API
@@ -129,14 +118,23 @@ const HomePage = () => {
             >
                 {/* Header */}
                 <View style={{ backgroundColor: "#ff6d00", padding: 12 }}>
-                    <Pressable onPress={() => router.push("/(stack)/address")}>
-                        <Text style={{ color: "white", fontSize: 16, fontWeight: "600" }}>
-                            Giao đến:
-                        </Text>
-                        <Text style={{ color: "white", fontWeight: "bold" }}>
-                            {appState?.location?.address || "Đang tìm vị trí"}
-                        </Text>
-                    </Pressable>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                        <Pressable onPress={() => router.push("/(stack)/address")} style={{ flex: 1 }}>
+                            <Text style={{ color: "white", fontSize: 16, fontWeight: "600" }}>Giao đến:</Text>
+                            <Text style={{ color: "white", fontWeight: "bold" }}>
+                                {appState?.location?.address || "Đang tìm vị trí"}
+                            </Text>
+                        </Pressable>
+
+                        {/* 🗨️ Icon chat */}
+                        <IconButton
+                            icon="chat"
+                            iconColor="white"
+                            size={24}
+                            onPress={() => router.push("/(stack)/chat.list")}
+                        />
+                    </View>
+
                     <ProductSearch />
                 </View>
                 {/* Banner */}
