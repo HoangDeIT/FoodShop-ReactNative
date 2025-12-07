@@ -1,8 +1,8 @@
 import { APP_COLOR } from '@/utils/constant';
+import { Ionicons } from '@expo/vector-icons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import Octicons from '@expo/vector-icons/Octicons';
 import { Tabs } from 'expo-router';
 import { ReactNode } from 'react';
 const TabLayout = () => {
@@ -40,42 +40,26 @@ const TabLayout = () => {
                         color={APP_COLOR.GREY}
                     />)
         }
-        if (routeName === "account") {
-            return (
-                focus ?
-                    <Octicons name="bell-fill"
-                        size={size}
-                        color={APP_COLOR.ORANGE}
-                    />
-                    :
-                    <Octicons name="bell"
-                        size={size}
-                        color={APP_COLOR.GREY}
-                    />
-            )
-        }
         if (routeName === "cart") {
             return (
-                focus ?
-                    <Octicons name="bell-fill"
-                        size={size}
-                        color={APP_COLOR.ORANGE}
-                    />
-                    :
-                    <Octicons name="bell"
-                        size={size}
-                        color={APP_COLOR.GREY}
-                    />
-            )
+                <MaterialCommunityIcons
+                    name={focus ? "cart" : "cart-outline"}
+                    size={size}
+                    color={focus ? APP_COLOR.ORANGE : APP_COLOR.GREY}
+                />
+            );
         }
-        // if (routeName === "notification") {
-        //     return (
-        //         focus ?
-        //             <MaterialCommunityIcons name="account" size={size} color={APP_COLOR.ORANGE} />
-        //             :
-        //             <MaterialCommunityIcons name="account-outline" size={size} color={APP_COLOR.GREY} />
-        //     )
-        // }
+
+        if (routeName === "account") {
+            return (
+                <Ionicons
+                    name={focus ? "person-circle" : "person-circle-outline"}
+                    size={size}
+                    color={focus ? APP_COLOR.ORANGE : APP_COLOR.GREY}
+                />
+            );
+        }
+
         return <></>
     }
     return (
@@ -106,12 +90,6 @@ const TabLayout = () => {
                     title: "Đã thích"
                 }}
             />
-            {/* <Tabs.Screen
-                name="notification"
-                options={{
-                    title: "Thông báo"
-                }}
-            /> */}
 
             <Tabs.Screen
                 name="account"
@@ -119,13 +97,12 @@ const TabLayout = () => {
                     title: "Tôi"
                 }}
             />
-            {/* <Tabs.Screen
-                name="index"
+            <Tabs.Screen
+                name="cart"
                 options={{
-                    title: 'Home',
-                    tabBarIcon: ({ color }) => <FontAwesome size={28} name="home" color={color} />,
+                    title: 'Cart',
                 }}
-            /> */}
+            />
         </Tabs>
     );
 }

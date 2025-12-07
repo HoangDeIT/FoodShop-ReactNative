@@ -1,3 +1,4 @@
+import ChatMessage from "@/components/chat/message/chat.message";
 import { useCurrentApp } from "@/context/app.context";
 import { IMessagePayload, useChatSocket } from "@/hooks/useChatSocket";
 import { getAllMessage, IConversation, IMessage, uploadFile } from "@/utils/chats.api";
@@ -8,13 +9,12 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
     FlatList,
-    Image,
     Keyboard,
     LayoutAnimation,
     Platform,
     StyleSheet,
     TextInput,
-    View,
+    View
 } from "react-native";
 import { Avatar, Divider, IconButton, Surface, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context"; // ✅ import SafeAreaView
@@ -226,16 +226,7 @@ export default function ChatScreen() {
                 <Surface
                     style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleOther]}
                 >
-                    {item.type === "image" ? (
-                        <Image
-                            source={{ uri: `${process.env.EXPO_PUBLIC_API_URL}/public/images/chat/${item.data}` }}
-                            style={{ width: 180, height: 180, borderRadius: 8 }}
-                        />
-                    ) : (
-                        <Text style={isMe ? styles.textMe : styles.textOther}>
-                            {item.data}
-                        </Text>
-                    )}
+                    <ChatMessage item={item} isMe={isMe} />
                     <Text style={styles.time}>
                         {dayjs(item.createdAt).format("HH:mm")}
                     </Text>
@@ -246,12 +237,11 @@ export default function ChatScreen() {
             </View>
         );
     };
-
     const avatarUrl =
-        partner?.avatar ||
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(
-            partner?.name || "User"
-        )}&background=random`;
+        partner?.avatar
+            ? `${process.env.EXPO_PUBLIC_API_URL}/public/images/users/${partner.avatar}`
+            : `https://ui-avatars.com/api/?name=${encodeURIComponent(partner?.name ?? "User")}&background=random`;
+
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -268,7 +258,7 @@ export default function ChatScreen() {
                         {partner?.name || "Người dùng"}
                     </Text>
                     <Text style={{ color: isOnline ? "#4CAF50" : "#888", fontSize: 12 }}>
-                        {isOnline ? "🟢 Online" : "⚫ Offline"}
+                        {isOnline || partner?.name === "Chatbot AI" ? "🟢 Online" : "⚫ Offline"}
                     </Text>
                 </View>
             </View>

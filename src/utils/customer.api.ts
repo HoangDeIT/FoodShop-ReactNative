@@ -140,7 +140,7 @@ export const unLikeShopApi = async (shopId: string) => {
 }
 export const checkLikeStatus = async (shopId: string) => {
     const url = `/api/v1/likes/${shopId}/like/status`;
-    return await axios.get<IBackendRes<{ isLike: boolean, shopId: string, userId: string }>>(url);
+    return await axios.get<IBackendRes<{ isLiked: boolean, shopId: string, userId: string }>>(url);
 }
 export const searchProductsApi = async (search: string) => {
     const url = `/api/v1/products/search-near?keyword=${search}`;;
@@ -163,3 +163,19 @@ export const getLikesByUser = async (current: number, pageSize: number) => {
     const url = `/api/v1/likes/user?current=${current}&pageSize=${pageSize}`;;
     return await axios.get<IBackendRes<IModelPaginate<IUserR & { distance: number }>>>(url);
 }
+export const updateProfileApi = async (data: { name?: string; avatar?: string }) => {
+    const url = "/api/v1/users/update-profile";
+    return await axios.post<IBackendRes<IUserR>>(url, data);
+};
+export const changePasswordApi = async (
+    oldPassword: string,
+    newPassword: string
+) => {
+    const url = "/api/v1/users/change-password";
+    return await axios.post<IBackendRes<{ message: string }>>(url, { oldPassword, newPassword });
+};
+export const getProfileApi = async () => {
+    return await axios.get<IBackendRes<IUserR>>(
+        "/api/v1/auth/get-profile"
+    );
+};

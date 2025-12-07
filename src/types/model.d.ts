@@ -48,6 +48,8 @@ declare global {
         OTPExpired?: string;
         status: "active" | "inactive";
         location: ILocation | string | null;
+        rating?: number;
+        reviewsCount?: number;
     }
     export interface IUpdateLocationReq {
         latitude: number;

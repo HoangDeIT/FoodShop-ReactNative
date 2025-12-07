@@ -1,7 +1,9 @@
 import ProductOptionsSheet from "@/components/products/product.option.sheet";
+import { useCurrentApp } from "@/context/app.context";
 import { addToCart } from "@/db/services/cartService";
 import { createConversation } from "@/utils/chats.api";
 import { checkLikeStatus, getProducts, getProfileSeller, likeShopApi, unLikeShopApi } from "@/utils/customer.api";
+import { calculateDistance } from "@/utils/function";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, ScrollView, View } from "react-native";
@@ -21,16 +23,16 @@ export default function RestaurantScreen() {
         visible: false,
         message: "",
     });
+    const { appState } = useCurrentApp();
     const fetchMenu = async () => {
-        const res = await getProducts(1, 5, id as string);
+        const res = await getProducts(1, 100, id as string);
         const res2 = await getProfileSeller(id as string);
         const res3 = await checkLikeStatus(id as string);
         if (!res.error && res.data && res.data.result && !res2.error && res2.data) {
             setMenu(res.data.result);
             setMeta(res.data.meta);
             setSeller(res2.data);
-            setIsFavorite(Boolean(res3.data?.isLike));
-            console.log("?>>>>>>>>>>>>res3 ", res3)
+            setIsFavorite(Boolean(res3.data?.isLiked));
         }
     }
     useEffect(() => {
@@ -75,7 +77,6 @@ export default function RestaurantScreen() {
             setSnackbar({ visible: true, message: "Thêm sản phẩm thất bại ❌" });
         }
     };
-
     const toggleFavorite = async () => {
         setIsFavorite((prev) => !prev);
         if (isFavorite) await unLikeShopApi(id as string)
@@ -133,8 +134,20 @@ export default function RestaurantScreen() {
                         {seller?.name}
                     </Text>
                     <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
-                        <Text>⭐ 4.5 (100+ Bình luận) · </Text>
-                        <Text>30 phút</Text>
+                        <Text>⭐ {seller?.rating} ({seller?.reviewsCount} Bình luận) · </Text>
+                        <Text>
+
+                            {
+                                //@ts-ignore
+                                seller?.location?.latitude && seller?.location?.longitude
+                                    ? calculateDistance(
+                                        appState?.location?.latitude ?? 0,
+                                        appState?.location?.longitude ?? 0,
+                                        //@ts-ignore
+                                        seller.location.latitude, seller.location.longitude
+                                    ).toFixed(1) + " km"
+                                    : "Đang cập nhật"}
+                        </Text>
                     </View>
                 </Card.Content>
             </Card>

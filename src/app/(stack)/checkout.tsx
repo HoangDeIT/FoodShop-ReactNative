@@ -50,7 +50,7 @@ export default function CheckoutScreen() {
     }, []);
 
     // ✅ Tổng tiền sản phẩm
-    const subtotal = items.reduce((sum, i) => sum + i.totalPrice * i.quantity, 0);
+    const subtotal = items.reduce((sum, i) => sum + i.totalPrice, 0);
 
     // ✅ Load vị trí người dùng
     useEffect(() => {
@@ -154,7 +154,7 @@ export default function CheckoutScreen() {
             if (!res?.error) {
                 await clearSelectedItems();
                 Alert.alert("🎉 Thành công", "Đặt hàng thành công!");
-                //  router.replace("/(tabs)/order");
+                router.replace("/(tabs)/order");
             } else {
                 console.error("❌ Checkout error:", res);
                 Alert.alert("⚠️ Thất bại", "Không thể tạo đơn hàng, vui lòng thử lại.");

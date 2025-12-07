@@ -35,7 +35,7 @@ export default function ChatListScreen() {
     const renderItem = ({ item }: { item: IConversation }) => {
         // 🔎 Lấy ra người còn lại (đối phương)
         const partner = item.participants.find((p) => p._id !== appState?._id);
-
+        console.log("Partner:", partner);
         const lastMessage =
             item.lastMessage?.type === "image"
                 ? "📷 Đã gửi một ảnh"
@@ -52,7 +52,7 @@ export default function ChatListScreen() {
                 onPress={() => router.push(`/(stack)/chat/${item._id}`)}
             >
                 {partner?.avatar ? (
-                    <Avatar.Image size={50} source={{ uri: partner.avatar }} />
+                    <Avatar.Image size={50} source={{ uri: `${process.env.EXPO_PUBLIC_API_URL}/public/images/users/${partner.avatar}` }} />
                 ) : (
                     <Avatar.Text
                         size={50}

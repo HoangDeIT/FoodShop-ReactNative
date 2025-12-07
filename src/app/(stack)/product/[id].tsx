@@ -115,7 +115,7 @@ export default function ProductDetailScreen() {
                             {product.name}
                         </Text>
                         <Chip icon="fire" compact style={{ marginTop: 8 }}>
-                            {product.sold || 1} đã bán
+                            {product.sold ?? 1} đã bán
                         </Chip>
                         <Text
                             variant="headlineSmall"

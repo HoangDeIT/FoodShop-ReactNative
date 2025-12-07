@@ -4,11 +4,11 @@ import * as SQLite from 'expo-sqlite';
 let dbInstance: ReturnType<typeof drizzle> | null = null;
 
 export async function initDb() {
-    if (dbInstance) return dbInstance;
-    const sqlite = await SQLite.openDatabaseAsync('app.db');
-    dbInstance = drizzle(sqlite);
+  if (dbInstance) return dbInstance;
+  const sqlite = await SQLite.openDatabaseAsync('app.db');
+  dbInstance = drizzle(sqlite);
 
-    await sqlite.execAsync(`
+  await sqlite.execAsync(`
   CREATE TABLE IF NOT EXISTS cart_shops (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     shop_id TEXT NOT NULL,
@@ -38,6 +38,6 @@ export async function initDb() {
   );
 `);
 
-    console.log('✅ SQLite schema ready');
-    return dbInstance;
+  console.log('✅ SQLite schema ready');
+  return dbInstance;
 }

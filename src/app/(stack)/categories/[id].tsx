@@ -1,5 +1,5 @@
 import { findCategoryApi, findSellerWithProductsApi } from "@/utils/customer.api";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, ScrollView, TouchableOpacity, View } from "react-native";
 import { Divider, Text } from "react-native-paper";
@@ -20,7 +20,7 @@ export default function DinnerDealsScreen() {
                 // 🔹 Gọi song song 2 API
                 const [catRes, sellerRes] = await Promise.all([
                     findCategoryApi(id as string),
-                    findSellerWithProductsApi(id as string, "1", "10"),
+                    findSellerWithProductsApi(id as string, "1", "100"),
                 ]);
 
                 if (!catRes.error) setCategory(catRes.data ?? null);
@@ -86,7 +86,10 @@ export default function DinnerDealsScreen() {
 
             {/* Danh sách quán */}
             {sellers.map((s, idx) => (
-                <TouchableOpacity key={idx} activeOpacity={0.8}>
+                <TouchableOpacity key={idx} activeOpacity={0.8} onPress={() => {
+                    // Điều hướng đến trang quán
+                    router.push(`/shop/${s.seller._id}`);
+                }}>
                     <View
                         style={{
                             flexDirection: "row",

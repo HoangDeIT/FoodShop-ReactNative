@@ -79,13 +79,13 @@ export default function CartScreen() {
 
     // ✅ Tổng tiền tạm tính (chỉ item selected)
     const total = Object.values(cartGrouped).reduce((sum, shop) => {
-        const shopSelectedItems = shop.items.filter((i) => i.selected);
-        const shopTotal = shopSelectedItems.reduce(
-            (acc, i) => acc + i.totalPrice * i.quantity,
-            0
-        );
+        const shopTotal = shop.items
+            .filter(i => i.selected)
+            .reduce((subtotal, i) => subtotal + i.totalPrice, 0);
+
         return sum + shopTotal;
     }, 0);
+
 
     // ✅ Đặt hàng (lấy item selected)
     const onCheckout = async () => {
@@ -157,10 +157,9 @@ export default function CartScreen() {
         }
     };
     // ✅ Toggle chọn món
-    const onToggleSelect = async (itemId: number) => {
+    const onToggleSelect = async (item: ICartItem) => {
         try {
-            // Service lo toàn bộ logic (gồm cả unselect shop khác)
-            await toggleItemSelect(itemId, true); // toggleItemSelect tự xử lý toggle
+            await toggleItemSelect(item.id, !item.selected); // đổi trạng thái nè UwU
             await loadCart();
         } catch (err: any) {
             Alert.alert("Lỗi", err.message || "Không thể chọn sản phẩm");
@@ -237,7 +236,7 @@ export default function CartScreen() {
                                 <View style={{ flexDirection: "row", alignItems: "center" }}>
                                     <Checkbox
                                         status={item.selected ? "checked" : "unchecked"}
-                                        onPress={() => onToggleSelect(item.id)}
+                                        onPress={() => onToggleSelect(item)}
                                     />
 
                                     <Image
