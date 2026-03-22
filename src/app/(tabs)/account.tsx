@@ -62,18 +62,18 @@ export default function AccountScreen() {
                     size={80}
                     source={{
                         uri:
-                            user?.avatar
-                                ? `${process.env.EXPO_PUBLIC_API_URL}/public/images/users/${user.avatar}`
+                            user?.user.avatar
+                                ? `${process.env.EXPO_PUBLIC_API_URL}/public/images/users/${user.user.avatar}`
                                 : "https://i.pravatar.cc/150?img=12", // fallback
                     }}
                 />
 
                 <Text style={{ fontSize: 18, fontWeight: "bold", marginTop: 10 }}>
-                    {user?.name || "Người dùng"}
+                    {user?.user.name || "Người dùng"}
                 </Text>
 
                 <Text style={{ color: "#777" }}>
-                    {user?.email || "No email"}
+                    {user?.user.email || "No email"}
                 </Text>
             </View>
 
@@ -116,7 +116,7 @@ export default function AccountScreen() {
             <EditProfileModal
                 visible={openEdit}
                 onClose={() => setOpenEdit(false)}
-                user={user!}
+                user={user?.user!}
                 onUpdated={refreshUser}
             />
 

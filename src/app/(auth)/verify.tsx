@@ -198,26 +198,28 @@ const styles = StyleSheet.create({
     },
     otpContainer: {
         flexDirection: "row",
-        justifyContent: "space-between",
-        width: "90%",
+        justifyContent: "center",
+        width: "100%",
+        maxWidth: 360,
+        alignSelf: "center",
+        gap: 10,
         marginVertical: 20,
     },
+
+
     otpInput: {
-        width: 50,
-        height: 58,
+        width: 44,
+        height: 54,
         borderRadius: 12,
         borderWidth: 1.5,
         borderColor: "rgba(255,255,255,0.3)",
         textAlign: "center",
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: "600",
         color: "#1b5e20",
-        backgroundColor: "rgba(255,255,255,0.95)",
-        shadowColor: "#000",
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
+        backgroundColor: "rgba(255,255,255,0.95)"
     },
+
     otpInputFocused: {
         borderColor: "#3ddc84",
         shadowColor: "#3ddc84",

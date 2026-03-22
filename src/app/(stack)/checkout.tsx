@@ -85,11 +85,11 @@ export default function CheckoutScreen() {
             const sellerRes = await getProfileSeller(shopId);
             const shop = sellerRes.data;
 
-            if (!shop?.location) {
+            if (!shop?.profile?.location) {
                 Alert.alert("⚠️ Lỗi", "Không tìm thấy vị trí cửa hàng.");
                 return;
             }
-            const shopLocation = shop.location as ILocation;
+            const shopLocation = shop.profile.location as ILocation;
             const shopLat = shopLocation.latitude;
             const shopLng = shopLocation.longitude;
 

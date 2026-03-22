@@ -54,8 +54,8 @@ export default function RestaurantScreen() {
         try {
 
             await addToCart({
-                shopId: seller?._id!,
-                shopName: seller!.name,
+                shopId: seller?.user._id!,
+                shopName: seller!.user.name,
                 productId: product._id,
                 productName: product.name,
                 basePrice: product.basePrice,
@@ -95,7 +95,7 @@ export default function RestaurantScreen() {
             <Card mode="contained" style={{ margin: 10, borderRadius: 12 }}>
                 <Card.Cover
                     source={{
-                        uri: `${process.env.EXPO_PUBLIC_API_URL}/public/images/users/${seller?.avatar}`,
+                        uri: `${process.env.EXPO_PUBLIC_API_URL}/public/images/users/${seller?.user.avatar}`,
                     }}
                 />
                 <IconButton
@@ -131,10 +131,10 @@ export default function RestaurantScreen() {
 
                 <Card.Content style={{ marginTop: 10 }}>
                     <Text variant="titleLarge" style={{ fontWeight: "bold" }}>
-                        {seller?.name}
+                        {seller?.user.name}
                     </Text>
                     <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
-                        <Text>⭐ {seller?.rating} ({seller?.reviewsCount} Bình luận) · </Text>
+                        {/* <Text>⭐ {seller?.rating} ({seller?.reviewsCount} Bình luận) · </Text> */}
                         <Text>
 
                             {
@@ -228,7 +228,7 @@ export default function RestaurantScreen() {
                     product={selectedProduct}
                     sizes={selectedProduct.sizes || []}
                     toppings={selectedProduct.toppings || []}
-                    seller={seller!}
+                    seller={seller?.user!}
                 />
             )}
 

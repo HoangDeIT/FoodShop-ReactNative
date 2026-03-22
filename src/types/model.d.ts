@@ -28,11 +28,16 @@ declare global {
         address?: string;
     }
 
-    interface IUserLogin extends IUserR {
+    interface IUserLogin extends IUser {
         access_token: string;
         location: ILocation;
     }
     interface IUserR {
+        user: IUser;
+        profile: IUserProfile;
+    }
+    type IUserProfile = ISellerProfile | ICustomerProfile | null;
+    interface IUser {
         avatar?: string;
         _id: string;
         name: string;
@@ -43,15 +48,57 @@ declare global {
         deletedAt: string | null;
         createdAt: string;
         updatedAt: string;
+        isOpen: boolean;
         __v: number;
         OTP?: string;
         OTPExpired?: string;
         status: "active" | "inactive";
-        location: ILocation | string | null;
-        rating?: number;
-        reviewsCount?: number;
     }
-    export interface IUpdateLocationReq {
+    export interface ICustomerProfile {
+        type: "customer";
+
+        _id: string;
+        userId: string;
+
+        location?: ILocation;
+
+        expoToken?: string;
+        isOnline: boolean;
+
+        lastActive?: string;
+
+        createdAt: string;
+        updatedAt: string;
+    }
+    interface ISellerProfile {
+        type: "seller";
+
+        _id: string;
+        userId: string;
+
+        shopName: string;
+        description?: string;
+
+        location?: ILocation;
+
+        isOpen: boolean;
+        isOnline: boolean;
+
+        lastActive?: string;
+
+        createdBy?: {
+            _id: string;
+            email: string;
+        };
+
+        updatedBy?: {
+            _id: string;
+            email: string;
+        };
+
+        createdAt: string;
+        updatedAt: string;
+    }    export interface IUpdateLocationReq {
         latitude: number;
         longitude: number;
         address?: string;
@@ -99,13 +146,13 @@ declare global {
         name: string;
         description?: string;
         image?: string;
-        seller: string | IUserR;
+        seller: string | IUser;
         // 💰 Giá cơ bản
         basePrice: number;
 
         // 📦 Phân loại
         category: string | ICategoryR; // nếu populate thì là object
-        seller: string | IUserR;        // nếu populate thì là object
+        seller: string | IUser;        // nếu populate thì là object
 
         // 🧩 Biến thể sản phẩm
         sizes?: IProductSize[];
@@ -234,8 +281,8 @@ declare global {
     }
     interface IOrderR {
         _id: string;
-        customer: IUserR | null; // Có thể null nếu populate bị thiếu
-        shop: IUserR; // hoặc IUserMini nếu chỉ trả về name/email
+        customer: IUser | null; // Có thể null nếu populate bị thiếu
+        shop: IUser; // hoặc IUserMini nếu chỉ trả về name/email
         items: IOrderItemR[]; // danh sách item trong đơn hàng
         totalPrice: number;
         orderStatus: "pending" | "confirmed" | "preparing" | "delivering" | "completed" | "cancelled";
@@ -286,7 +333,7 @@ declare global {
     }
     interface IReviewR {
         _id: string;
-        user: IUserR | string; // người viết review
+        user: IUser | string; // người viết review
         product: IProductR | string;
         rating: number; // 1–5 sao
         comment: string;
@@ -298,7 +345,7 @@ declare global {
     }
     interface IProductSearchResult {
         address: string;
-        user: IUserR;
+        user: IUser;
         products: IProductR;
         distance: number; // đơn vị: km
     }
@@ -307,31 +354,31 @@ declare global {
         distance: number; // km
         averageRating: number;
         totalReviews: number;
-        seller: IUserR
+        seller: IUser
         products: IProductR[]
     }
     interface ISellerWithProductType {
         topSelling: {
             _id: string;
-            seller: IUserR;
+            seller: IUser;
             totalSold: number;
             distance: number;
         }[],
         liked: {
             _id: string;
-            seller: IUserR;
+            seller: IUser;
             likeCount: number;
             distance: number;
         }[],
         ordered: {
             _id: string;
-            seller: IUserR;
+            seller: IUser;
             totalOrders: number;
             distance: number;
         }[],
         topRated: {
             _id: string;
-            seller: IUserR;
+            seller: IUser;
             avgRating: number;
             distance: number;
         }[]

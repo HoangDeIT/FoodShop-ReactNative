@@ -17,7 +17,7 @@ interface Props {
     sizes?: Option[];
     toppings?: Option[];
     quantityP?: number,
-    seller: IUserR;
+    seller: IUser;
 }
 
 const ProductOptionsSheet = ({ visible, onClose, product, sizes = [], toppings = [], quantityP = 1, seller }: Props) => {

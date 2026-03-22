@@ -161,7 +161,7 @@ export const getSellersType = async () => {
 }
 export const getLikesByUser = async (current: number, pageSize: number) => {
     const url = `/api/v1/likes/user?current=${current}&pageSize=${pageSize}`;;
-    return await axios.get<IBackendRes<IModelPaginate<IUserR & { distance: number }>>>(url);
+    return await axios.get<IBackendRes<IModelPaginate<IUser & ISellerProfile & { distance: number }>>>(url);
 }
 export const updateProfileApi = async (data: { name?: string; avatar?: string }) => {
     const url = "/api/v1/users/update-profile";

@@ -4,10 +4,10 @@ export const loginApi = async (username: string, password: string) => {
     const url = "/api/v1/auth/login";
     return await axios.post<IBackendRes<IUserLogin>>(url, { username, password });
 }
-export const getAccountAPI = async () => {
-    const url = `/api/v1/auth/get-profile`;
-    return await axios.get<IBackendRes<IUserLogin>>(url)
-}
+// export const getAccountAPI = async () => {
+//     const url = `/api/v1/auth/get-profile`;
+//     return await axios.get<IBackendRes<IUserLogin>>(url)
+// }
 
 export const registerApi = async (data: {
     name: string;

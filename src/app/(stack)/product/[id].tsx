@@ -57,7 +57,7 @@ export default function ProductDetailScreen() {
 
         try {
             setLoading(true);
-            const seller = product.seller as IUserR;
+            const seller = product.seller as IUser;
 
             await addToCart({
                 shopId: seller._id,
@@ -137,7 +137,7 @@ export default function ProductDetailScreen() {
                     product={selectedProduct}
                     sizes={selectedProduct.sizes || []}
                     toppings={selectedProduct.toppings || []}
-                    seller={selectedProduct.seller as IUserR}
+                    seller={selectedProduct.seller as IUser}
                 />
             )}
             {/* 🧡 Thanh thêm giỏ hàng */}

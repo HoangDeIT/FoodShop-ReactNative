@@ -1,6 +1,6 @@
 import { useCurrentApp } from "@/context/app.context";
 import { initDb } from "@/db/db";
-import { getAccountAPI } from "@/utils/api.auth";
+import { getProfileApi } from "@/utils/customer.api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -25,11 +25,11 @@ export default function RootPage() {
 
         (async () => {
             try {
-                const res = await getAccountAPI();
+                const res = await getProfileApi();
                 await initDb();
                 if (res?.data) {
                     const token = (await AsyncStorage.getItem("access_token")) ?? "";
-                    setAppState({ ...res.data, access_token: token });
+                    setAppState({ ...res.data.user, access_token: token,location: res.data.profile?.location as ILocation });
 
                     // Delay 1 tick để Router sync trước khi điều hướng
                     // setTimeout(() => router.replace("/(auth)/location.loading"), 0);

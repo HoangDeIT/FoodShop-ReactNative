@@ -7,7 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 
 
-type IUserWithDistance = IUserR & { distance: number };
+type IUserWithDistance = IUser & ISellerProfile & { distance: number }
 
 export default function FavoriteScreen() {
     const [shops, setShops] = useState<IUserWithDistance[]>([]);
