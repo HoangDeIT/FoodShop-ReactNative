@@ -1,5 +1,6 @@
 import ProductOptionsSheet from "@/components/products/product.option.sheet";
 import { useCurrentApp } from "@/context/app.context";
+import { useUIContext } from "@/context/ui.context";
 import { addToCart } from "@/db/services/cartService";
 import { createConversation } from "@/utils/chats.api";
 import { checkLikeStatus, getProducts, getProfileSeller, likeShopApi, unLikeShopApi } from "@/utils/customer.api";
@@ -12,6 +13,7 @@ import { Card, Chip, Divider, IconButton, Snackbar, Text } from "react-native-pa
 export default function RestaurantScreen() {
     const router = useRouter();
     const { id } = useLocalSearchParams();
+    const { setScreen } = useUIContext();
     const [menu, setMenu] = useState<IProductR[]>([]);
     const [meta, setMeta] = useState<IMeta>();
     const [seller, setSeller] = useState<IUserR>();
@@ -34,6 +36,14 @@ export default function RestaurantScreen() {
             setSeller(res2.data);
             setIsFavorite(Boolean(res3.data?.isLiked));
         }
+        setScreen({
+            currentPage: "shopDetail",
+            context: {
+                products: menu,
+                shop: seller,
+                isFavorite,
+            }
+        })
     }
     useEffect(() => {
         fetchMenu();

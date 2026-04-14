@@ -10,6 +10,7 @@ import {
     updateQuantity
 } from "@/db/services/cartService"; // <-- Import service SQLite
 import { syncCartValid } from "@/utils/customer.api";
+import { eventBus } from "@/utils/eventBus";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Image, RefreshControl, ScrollView, View } from "react-native";
@@ -63,8 +64,22 @@ export default function CartScreen() {
     useEffect(() => {
         loadCart();
     }, []);
+    //logic AI
+    useEffect(() => {
+        loadCart();
 
+        const handler = () => {
+            console.log("🔄 Cart updated, reloading...");
+            loadCart();
+        };
 
+        eventBus.on("CART_UPDATED", handler);
+
+        return () => {
+            eventBus.off("CART_UPDATED", handler);
+        };
+    }, []);
+    //end logic AI
     // ✅ Cập nhật số lượng
     const onChangeQuantity = async (itemId: number, delta: number) => {
         await updateQuantity(itemId, delta); // update DB
@@ -258,7 +273,7 @@ export default function CartScreen() {
                                                 Size: {item.sizeName}
                                             </Text>
                                         )}
-                                        {item.toppingNames && item.toppingNames.length > 0 && (
+                                        {Array.isArray(item.toppingNames) && item.toppingNames.length > 0 && (
                                             <Text style={{ color: "#555", fontSize: 13 }}>
                                                 Topping: {item.toppingNames.join(", ")}
                                             </Text>

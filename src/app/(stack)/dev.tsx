@@ -1,8 +1,12 @@
-import * as SQLite from "expo-sqlite";
+import {
+    clearAllCart,
+    clearTable,
+    getAllCartItems,
+    getAllCartShops,
+} from "@/db/services/sqliteDebugService";
 import { useEffect, useState } from "react";
 import { Alert, ScrollView, Text, View } from "react-native";
 import { Button, Divider } from "react-native-paper";
-
 export default function DebugSQLiteScreen() {
     const [rows, setRows] = useState<any[]>([]);
     const [shops, setShops] = useState<any[]>([]);
@@ -10,51 +14,40 @@ export default function DebugSQLiteScreen() {
     // ✅ Load dữ liệu 2 bảng
     const loadData = async () => {
         try {
-            const db = await SQLite.openDatabaseAsync("app.db");
+            const items = await getAllCartItems();
+            const shops = await getAllCartShops();
 
-            // Lấy cart_items
-            const resultItems = await db.getAllAsync("SELECT * FROM cart_items");
-            setRows(resultItems);
-
-            // Lấy cart_shops
-            const resultShops = await db.getAllAsync("SELECT * FROM cart_shops");
-            setShops(resultShops);
+            setRows(items);
+            setShops(shops);
         } catch (err) {
             console.error("❌ Lỗi load DB:", err);
         }
     };
 
     // ✅ Hàm xóa toàn bộ dữ liệu trong bảng
-    const clearTable = async (tableName: string) => {
+    const clearTableHandler = async (tableName: string) => {
         try {
-            const db = await SQLite.openDatabaseAsync("app.db");
-            await db.execAsync(`DELETE FROM ${tableName};`);
-            Alert.alert("🧹 Dọn sạch", `Đã xoá toàn bộ dữ liệu trong ${tableName}`);
+            await clearTable(tableName);
+            Alert.alert("🧹 Dọn sạch", `Đã xoá ${tableName}`);
             await loadData();
         } catch (err) {
-            console.error(`❌ Lỗi khi xóa ${tableName}:`, err);
-            Alert.alert("Lỗi", `Không thể xóa bảng ${tableName}`);
+            console.error(err);
         }
     };
 
     // ✅ Xóa cả hai bảng (cart_items + cart_shops)
     const clearAll = async () => {
-        Alert.alert("Xác nhận", "Bạn có chắc muốn xoá toàn bộ dữ liệu?", [
-            { text: "Hủy", style: "cancel" },
+        Alert.alert("Xác nhận", "Xoá hết?", [
+            { text: "Huỷ", style: "cancel" },
             {
-                text: "Xóa hết",
-                style: "destructive",
+                text: "Xoá",
                 onPress: async () => {
-                    const db = await SQLite.openDatabaseAsync("app.db");
-                    await db.execAsync("DELETE FROM cart_items;");
-                    await db.execAsync("DELETE FROM cart_shops;");
+                    await clearAllCart();
                     await loadData();
-                    Alert.alert("🧹 Hoàn tất", "Đã xoá toàn bộ dữ liệu giỏ hàng");
                 },
             },
         ]);
     };
-
     useEffect(() => {
         loadData();
     }, []);
@@ -80,14 +73,14 @@ export default function DebugSQLiteScreen() {
                 </Button>
                 <Button
                     mode="contained-tonal"
-                    onPress={() => clearTable("cart_items")}
+                    onPress={() => clearTableHandler("cart_items")}
                     style={{ marginVertical: 4 }}
                 >
                     🧺 Xoá cart_items
                 </Button>
                 <Button
                     mode="contained-tonal"
-                    onPress={() => clearTable("cart_shops")}
+                    onPress={() => clearTableHandler("cart_shops")}
                     style={{ marginVertical: 4 }}
                 >
                     🏪 Xoá cart_shops

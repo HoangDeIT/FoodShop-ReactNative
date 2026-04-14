@@ -7,7 +7,7 @@ export interface IShop {
     _id: string;
     name: string;
     image: string;
-    rating: string;
+    //  rating: string;
     distance: string;
     time: string;
 }
@@ -59,7 +59,7 @@ export default function ShopList({ data }: ShopListProps) {
                                 marginTop: 4,
                             }}
                         >
-                            <Text style={{ fontSize: 12, color: "#777" }}>⭐ {item.rating}</Text>
+                            {/* <Text style={{ fontSize: 12, color: "#777" }}>⭐ {item.rating}</Text> */}
                             <Text style={{ fontSize: 12, color: "#777", marginLeft: 8 }}>
                                 {item.distance}
                             </Text>

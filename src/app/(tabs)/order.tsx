@@ -1,4 +1,5 @@
 import { getOrdersApi } from "@/utils/customer.api";
+import { eventBus } from "@/utils/eventBus";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -54,7 +55,24 @@ export default function OrderScreen() {
             console.error("❌ Lỗi fetchOrders:", err);
         }
     }, [page, selectedStatus, orders.length]);
+    useEffect(() => {
+        const onNavigate = async (payload: { url: string; isRefresh?: boolean }) => {
+            if (payload.url === "/(tabs)/order" && payload.isRefresh) {
+                setRefreshing(true);
+                setExpandedOrderId(null);
+                setPage(1);
+                setOrders([]);
+                await fetchOrders(true);
+                setRefreshing(false);
+            }
+        };
 
+        eventBus.on("NAVIGATE", onNavigate);
+
+        return () => {
+            eventBus.off("NAVIGATE", onNavigate);
+        };
+    }, [fetchOrders]);
     /** 🧭 Load lần đầu */
     useEffect(() => {
         fetchOrders(true);

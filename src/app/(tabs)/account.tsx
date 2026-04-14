@@ -1,18 +1,20 @@
 import ChangePasswordModal from "@/components/account/change.password.mocal";
 import EditProfileModal from "@/components/account/edit.profile.modal";
+import { useAssistantVoice } from "@/context/voice.context";
 import { getProfileApi } from "@/utils/customer.api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import * as SQLite from "expo-sqlite";
 import { useEffect, useState } from "react";
 import { Alert, RefreshControl, ScrollView, View } from "react-native";
-import { Avatar, Divider, List, Text } from "react-native-paper";
+import { Avatar, Divider, List, Switch, Text } from "react-native-paper";
 export default function AccountScreen() {
     const router = useRouter();
     const [user, setUser] = useState<IUserR | null>(null);
     const [openEdit, setOpenEdit] = useState(false);
     const [openChangePass, setOpenChangePass] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const { isAlwaysListening, setIsAlwaysListening } = useAssistantVoice();
     const refreshUser = async () => {
         setRefreshing(true);
         try {
@@ -107,6 +109,17 @@ export default function AccountScreen() {
                 title="Dev option"
                 onPress={() => router.push("/(stack)/dev")}
                 left={(props) => <List.Icon {...props} icon="code-tags" color="#ff3b30" />}
+            />
+            <List.Item
+                title="Luôn lắng nghe (Hey Food)"
+                description="Cho phép trợ lý luôn nghe để kích hoạt bằng giọng nói"
+                left={(props) => <List.Icon {...props} icon="microphone" />}
+                right={() => (
+                    <Switch
+                        value={isAlwaysListening}
+                        onValueChange={(v) => setIsAlwaysListening(v)}
+                    />
+                )}
             />
             <List.Item
                 title="Đăng xuất"

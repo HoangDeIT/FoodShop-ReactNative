@@ -1,5 +1,5 @@
 import { useCurrentApp } from "@/context/app.context";
-import { initDb } from "@/db/db";
+// import { initDb } from "@/db/db";
 import { getProfileApi } from "@/utils/customer.api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
@@ -26,10 +26,10 @@ export default function RootPage() {
         (async () => {
             try {
                 const res = await getProfileApi();
-                await initDb();
+                //   await initDb();
                 if (res?.data) {
                     const token = (await AsyncStorage.getItem("access_token")) ?? "";
-                    setAppState({ ...res.data.user, access_token: token,location: res.data.profile?.location as ILocation });
+                    setAppState({ ...res.data.user, access_token: token, location: res.data.profile?.location as ILocation });
 
                     // Delay 1 tick để Router sync trước khi điều hướng
                     // setTimeout(() => router.replace("/(auth)/location.loading"), 0);

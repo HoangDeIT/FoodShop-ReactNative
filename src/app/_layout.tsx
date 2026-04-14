@@ -8,6 +8,11 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PaperProvider } from "react-native-paper";
 import 'react-native-reanimated';
 
+
+import VoiceAssistantOverlay from '@/components/voice/voice.assistant.overlay';
+import VoiceAssistantManager from '@/components/voice/voice.assistent.manager';
+import { UIProvider } from '@/context/ui.context';
+import { AIProvider } from '@/context/voice.context';
 import * as SplashScreen from 'expo-splash-screen';
 
 
@@ -30,18 +35,25 @@ export default function RootLayout() {
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <AppProvider>
           <PaperProvider>
-            <Stack>
-              <Stack.Screen name="index" options={{ headerShown: false }} />
-              <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
-              <Stack.Screen name="(auth)/verify" options={{ headerShown: false }} />
-              <Stack.Screen name="(auth)/register" options={{ headerShown: false }} />
-              <Stack.Screen name="(auth)/forgot.password" options={{ headerShown: false }} />
-              <Stack.Screen name="(auth)/reset.password" options={{ headerShown: false }} />
-              <Stack.Screen name="(auth)/location.loading" options={{ headerShown: false }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="(stack)" options={{ headerShown: false }} />
-            </Stack>
-            <StatusBar style="auto" />
+            <UIProvider>
+              <AIProvider>
+                <VoiceAssistantManager />
+                <VoiceAssistantOverlay />
+
+                <Stack>
+                  <Stack.Screen name="index" options={{ headerShown: false }} />
+                  <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
+                  <Stack.Screen name="(auth)/verify" options={{ headerShown: false }} />
+                  <Stack.Screen name="(auth)/register" options={{ headerShown: false }} />
+                  <Stack.Screen name="(auth)/forgot.password" options={{ headerShown: false }} />
+                  <Stack.Screen name="(auth)/reset.password" options={{ headerShown: false }} />
+                  <Stack.Screen name="(auth)/location.loading" options={{ headerShown: false }} />
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="(stack)" options={{ headerShown: false }} />
+                </Stack>
+                <StatusBar style="auto" />
+              </AIProvider>
+            </UIProvider>
           </PaperProvider>
         </AppProvider>
       </ThemeProvider>

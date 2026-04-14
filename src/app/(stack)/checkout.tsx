@@ -4,8 +4,9 @@ import SearchAddress from "@/components/address/search.address";
 import { useCurrentApp } from "@/context/app.context";
 import { clearSelectedItems, getSelectedItems, getShopIdFromItem } from "@/db/services/cartService";
 import { createOrderApi, getProfileSeller } from "@/utils/customer.api";
+import { eventBus } from "@/utils/eventBus";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Alert, Image, ScrollView, StyleSheet, View } from "react-native";
 import { Button, Card, Divider, SegmentedButtons, Text, TextInput, useTheme } from "react-native-paper";
 
@@ -115,7 +116,7 @@ export default function CheckoutScreen() {
     }, [lat, lng, items]);
 
     // ✅ Đặt hàng
-    const handleCheckout = async () => {
+    const handleCheckout = useCallback(async () => {
         if (!receiverName || !receiverPhone) {
             Alert.alert("⚠️ Thiếu thông tin", "Vui lòng nhập họ tên và số điện thoại.");
             return;
@@ -131,6 +132,7 @@ export default function CheckoutScreen() {
 
         setLoading(true);
         const shopId = await getShopIdFromItem(items[0].id);
+
         try {
             const payload = {
                 shopId,
@@ -149,14 +151,14 @@ export default function CheckoutScreen() {
                 receiverPhone,
                 note: "",
             };
-            console.log("🚀 Creating order with payload:", payload);
+
             const res = await createOrderApi(payload);
             if (!res?.error) {
                 await clearSelectedItems();
+                eventBus.emit("ORDER_UPDATED", { type: "created" });
                 Alert.alert("🎉 Thành công", "Đặt hàng thành công!");
                 router.replace("/(tabs)/order");
             } else {
-                console.error("❌ Checkout error:", res);
                 Alert.alert("⚠️ Thất bại", "Không thể tạo đơn hàng, vui lòng thử lại.");
             }
         } catch (err) {
@@ -165,8 +167,29 @@ export default function CheckoutScreen() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [receiverName, receiverPhone, lat, lng, address, shipCost, distance, items, router]);
+    useEffect(() => {
+        const onSetCheckoutInfo = (payload: { receiverName?: string; receiverPhone?: string }) => {
+            if (payload.receiverName) setReceiverName(payload.receiverName);
+            if (payload.receiverPhone) setReceiverPhone(payload.receiverPhone);
+        };
+        const onSubmitOrder = async () => {
+            try {
+                await handleCheckout();
+                eventBus.emit("ORDER_UPDATED", { type: "created" });
+            } catch (err) {
+                console.error("SUBMIT_ORDER error:", err);
+            }
+        };
 
+        eventBus.on("SET_CHECKOUT_INFO", onSetCheckoutInfo);
+        eventBus.on("SUBMIT_ORDER", onSubmitOrder);
+
+        return () => {
+            eventBus.off("SET_CHECKOUT_INFO", onSetCheckoutInfo);
+            eventBus.off("SUBMIT_ORDER", onSubmitOrder);
+        };
+    }, [handleCheckout]);
     const total = subtotal + (shipCost || 0);
 
     return (
