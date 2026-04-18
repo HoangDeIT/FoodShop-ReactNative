@@ -175,7 +175,56 @@ export const executeFEActionsAfter = async (actions: IAction[]) => {
                     });
                     break;
                 }
+                case "SET_CHAT_INPUT": {
+                    const p = action.payload;
 
+                    if (!p || typeof p.conversationId !== "string" || typeof p.text !== "string") {
+                        console.warn("Invalid SET_CHAT_INPUT payload", action);
+                        break;
+                    }
+
+                    console.log("🧠 AI typing:", p.text);
+
+                    eventBus.emit("SET_CHAT_INPUT", {
+                        conversationId: p.conversationId,
+                        text: p.text,
+                    });
+
+                    break;
+                }
+                case "SUBMIT_CHAT_MESSAGE": {
+                    const p = action.payload;
+
+                    if (!p || typeof p.conversationId !== "string") {
+                        console.warn("Invalid SUBMIT_CHAT_MESSAGE payload", action);
+                        break;
+                    }
+
+                    console.log("📤 AI submit message");
+
+                    eventBus.emit("SUBMIT_CHAT_MESSAGE", {
+                        conversationId: p.conversationId,
+                    });
+
+                    break;
+                }
+                case "READ_CHAT_MESSAGES": {
+                    const p = action.payload;
+
+                    if (!p || typeof p.conversationId !== "string" || typeof p.text !== "string") {
+                        console.warn("Invalid READ_CHAT_MESSAGES payload", action);
+                        break;
+                    }
+
+                    console.log("🔊 AI reading messages");
+
+                    eventBus.emit("READ_CHAT_MESSAGES", {
+                        conversationId: p.conversationId,
+                        text: p.text,
+                    });
+
+                    break;
+                }
                 default:
                     console.warn("Unknown FE action:", action);
             }

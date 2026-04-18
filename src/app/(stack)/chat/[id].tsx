@@ -1,7 +1,11 @@
 import ChatMessage from "@/components/chat/message/chat.message";
 import { useCurrentApp } from "@/context/app.context";
+import { useUIContext } from "@/context/ui.context";
+import { useAssistantVoice } from "@/context/voice.context";
 import { IMessagePayload, useChatSocket } from "@/hooks/useChatSocket";
+import { speakWithControl } from "@/services/voice/tts/voice.service";
 import { getAllMessage, IConversation, IMessage, uploadFile } from "@/utils/chats.api";
+import { eventBus } from "@/utils/eventBus";
 import { getSocket } from "@/utils/socket";
 import dayjs from "dayjs";
 import * as ImagePicker from "expo-image-picker";
@@ -31,7 +35,8 @@ export default function ChatScreen() {
     const router = useRouter();
     const conversationId = id as string;
     const { appState } = useCurrentApp();
-
+    const { setScreen } = useUIContext();
+    const { setIsSpeaking } = useAssistantVoice();
     const [messages, setMessages] = useState<(IMessage | IMessagePayload)[]>([]);
     const [partner, setPartner] = useState<IConversation["participants"][0] | null>(null);
     const [input, setInput] = useState("");
@@ -70,6 +75,14 @@ export default function ChatScreen() {
                     ) || null;
                 console.log("firstMsg", firstMsg);
                 console.log("partnerUser", partnerUser);
+                setScreen({
+                    currentPage: "chat_detail",
+                    context: {
+                        conversationId,
+                        partnerId: partner?._id,
+                        partnerName: partner?.name,
+                    }
+                });
                 setPartner(partnerUser);
             }
 
@@ -137,8 +150,10 @@ export default function ChatScreen() {
     }, []);
 
     // ✉️ Gửi tin nhắn
-    const sendMessage = async () => {
-        if (!input.trim()) return;
+    const sendMessage = async (textArg?: string) => {
+        const textToSend = textArg ?? input;
+        if (!textToSend.trim()) return;
+
         const socket = getSocket();
         if (!socket) return;
 
@@ -146,10 +161,9 @@ export default function ChatScreen() {
             conversationId,
             senderId: appState?._id!,
             type: "text",
-            data: input,
+            data: textToSend,
             createdAt: new Date().toISOString(),
         };
-
 
         socket.emit("send_message", msg);
         setInput("");
@@ -207,7 +221,47 @@ export default function ChatScreen() {
             console.error("❌ Lỗi gửi ảnh:", err);
         }
     };
+    //Voice AI agent
+    useEffect(() => {
 
+        // ✍️ AI gõ chữ
+        const onSetChatInput = (payload: { conversationId: string; text: string }) => {
+            if (payload.conversationId !== conversationId) return;
+
+            console.log("👉 SET INPUT:", payload.text);
+            setInput(payload.text);
+        };
+
+        // 📤 AI gửi tin
+        const onSubmitChatMessage = async (payload: { conversationId: string }) => {
+            if (payload.conversationId !== conversationId) return;
+
+            console.log("👉 SUBMIT MESSAGE");
+            await sendMessage(input); // ⚠️ dùng input hiện tại
+        };
+
+        // 🔊 AI đọc tin nhắn
+        const onReadChatMessages = async (payload: {
+            conversationId: string;
+            text: string;
+        }) => {
+            if (payload.conversationId !== conversationId) return;
+
+            console.log("👉 READ MESSAGE:", payload.text);
+            await speakWithControl(payload.text, setIsSpeaking);
+        };
+
+        eventBus.on("SET_CHAT_INPUT", onSetChatInput);
+        eventBus.on("SUBMIT_CHAT_MESSAGE", onSubmitChatMessage);
+        eventBus.on("READ_CHAT_MESSAGES", onReadChatMessages);
+
+        return () => {
+            eventBus.off("SET_CHAT_INPUT", onSetChatInput);
+            eventBus.off("SUBMIT_CHAT_MESSAGE", onSubmitChatMessage);
+            eventBus.off("READ_CHAT_MESSAGES", onReadChatMessages);
+        };
+
+    }, [conversationId, input]);
     // 🧱 Render từng tin nhắn
     const renderItem = ({ item }: { item: IMessage | IMessagePayload }) => {
         const senderId = getSenderId(item);
@@ -297,9 +351,9 @@ export default function ChatScreen() {
                     placeholder="Nhập tin nhắn..."
                     value={input}
                     onChangeText={handleTypingInput}
-                    onSubmitEditing={sendMessage}
+                    onSubmitEditing={() => sendMessage()}
                 />
-                <IconButton icon="send" onPress={sendMessage} />
+                <IconButton icon="send" onPress={() => sendMessage()} />
             </View>
         </SafeAreaView>
     );

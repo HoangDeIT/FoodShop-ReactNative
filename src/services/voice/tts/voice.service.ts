@@ -4,7 +4,7 @@ import { ExpoSpeechRecognitionModule } from "expo-speech-recognition";
 export const speakWithControl = (
     text: string,
     setIsSpeaking: (v: boolean) => void,
-    startListening: () => void
+    startListening?: () => void
 ) => {
     Speech.speak(text, {
         language: "vi-VN",
@@ -16,12 +16,12 @@ export const speakWithControl = (
 
         onDone: () => {
             setIsSpeaking(false);
-            startListening(); // 🔁 bật lại mic
+            startListening?.(); // 🔁 bật lại mic
         },
 
         onStopped: () => {
             setIsSpeaking(false);
-            startListening();
+            startListening?.();
         }
     });
 };
