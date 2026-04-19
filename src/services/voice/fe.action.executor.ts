@@ -225,6 +225,51 @@ export const executeFEActionsAfter = async (actions: IAction[]) => {
 
                     break;
                 }
+                case "SET_REVIEW_TEXT": {
+                    const p = action.payload;
+
+                    if (!p || typeof p.productId !== "string" || typeof p.text !== "string") {
+                        console.warn("Invalid SET_REVIEW_TEXT payload", action);
+                        break;
+                    }
+
+                    eventBus.emit("SET_REVIEW_TEXT", {
+                        productId: p.productId,
+                        text: p.text,
+                        reviewContext: p.reviewContext,
+                    });
+
+                    break;
+                }
+                case "SET_REVIEW_RATING": {
+                    const p = action.payload;
+
+                    if (!p || typeof p.productId !== "string" || typeof p.rating !== "number") {
+                        console.warn("Invalid SET_REVIEW_RATING payload", action);
+                        break;
+                    }
+
+                    eventBus.emit("SET_REVIEW_RATING", {
+                        productId: p.productId,
+                        rating: p.rating,
+                    });
+
+                    break;
+                }
+                case "SUBMIT_REVIEW": {
+                    const p = action.payload;
+
+                    if (!p || typeof p.productId !== "string") {
+                        console.warn("Invalid SUBMIT_REVIEW payload", action);
+                        break;
+                    }
+
+                    eventBus.emit("SUBMIT_REVIEW", {
+                        productId: p.productId,
+                    });
+
+                    break;
+                }
                 default:
                     console.warn("Unknown FE action:", action);
             }

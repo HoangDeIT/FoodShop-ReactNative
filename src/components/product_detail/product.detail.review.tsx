@@ -8,8 +8,9 @@ import {
     postReviewApi,
     uploadFile,
 } from "@/utils/customer.api";
+import { eventBus } from "@/utils/eventBus";
 import * as ImagePicker from "expo-image-picker";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
     Dimensions,
     Image,
@@ -34,6 +35,7 @@ const screenWidth = Dimensions.get("window").width;
 interface ReviewSectionProps {
     productId: string;
 }
+
 interface LocalImage {
     uri: string;
     name: string;
@@ -51,34 +53,116 @@ export default function ReviewSection({ productId }: ReviewSectionProps) {
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const { appState } = useCurrentApp();
-    // 🟢 Fetch review + quyền comment
-    useEffect(() => {
-        loadAll();
-    }, [productId]);
 
-    const loadAll = async () => {
-        await Promise.all([fetchReviews(), checkCommentPermission()]);
-    };
+    const ratingRef = useRef(0);
+    const commentRef = useRef("");
 
-    const fetchReviews = async () => {
+    const setReviewRating = useCallback((value: number) => {
+        ratingRef.current = value;
+        setRating(value);
+    }, []);
+
+    const setReviewComment = useCallback((value: string) => {
+        commentRef.current = value;
+        setComment(value);
+    }, []);
+
+    const fetchReviews = useCallback(async () => {
         try {
             const res = await getReviewsApi(productId);
             setReviews(res.data ?? []);
         } catch (err) {
             console.error("❌ Lỗi tải review:", err);
         }
-    };
+    }, [productId]);
 
-    const checkCommentPermission = async () => {
+    const checkCommentPermission = useCallback(async () => {
         try {
             const res = await checkCanCommentApi(productId);
             setCanComment(res.data?.canComment ?? false);
-        } catch (err) {
+        } catch {
             setCanComment(false);
         }
-    };
+    }, [productId]);
 
-    // 📷 Chọn nhiều ảnh review
+    const loadAll = useCallback(async () => {
+        await Promise.all([fetchReviews(), checkCommentPermission()]);
+    }, [checkCommentPermission, fetchReviews]);
+
+    useEffect(() => {
+        loadAll();
+    }, [loadAll]);
+
+    const handleSendComment = useCallback(async () => {
+        const finalComment = commentRef.current.trim();
+        const finalRating = ratingRef.current;
+
+        if (!canComment) {
+            alert("Bạn chưa thể đánh giá sản phẩm này ❌");
+            return;
+        }
+
+        if (!finalComment || finalRating === 0) {
+            alert("Vui lòng nhập nội dung và chọn sao 🌟");
+            return;
+        }
+
+        try {
+            setLoading(true);
+            let uploadedNames: string[] = [];
+
+            if (images.length > 0) {
+                const res = await uploadFile(images, "reviews");
+                uploadedNames = res.data?.fileName ?? [];
+            }
+
+            await postReviewApi({
+                product: productId,
+                order: "",
+                rating: finalRating,
+                comment: finalComment,
+                images: uploadedNames,
+            });
+
+            setReviewComment("");
+            setReviewRating(0);
+            setImages([]);
+            await loadAll();
+        } catch (err) {
+            console.error("❌ Lỗi gửi review:", err);
+            alert("Không thể gửi đánh giá");
+        } finally {
+            setLoading(false);
+        }
+    }, [canComment, images, loadAll, productId, setReviewComment, setReviewRating]);
+
+    useEffect(() => {
+        const onSetReviewText = (payload: { productId: string; text: string }) => {
+            if (payload.productId !== productId) return;
+            setReviewComment(payload.text);
+        };
+
+        const onSetReviewRating = (payload: { productId: string; rating: number }) => {
+            if (payload.productId !== productId) return;
+            setReviewRating(payload.rating);
+        };
+
+        const onSubmitReview = async (payload: { productId: string }) => {
+            if (payload.productId !== productId) return;
+            await handleSendComment();
+        };
+
+        eventBus.on("SET_REVIEW_TEXT", onSetReviewText);
+        eventBus.on("SET_REVIEW_RATING", onSetReviewRating);
+        eventBus.on("SUBMIT_REVIEW", onSubmitReview);
+
+        return () => {
+            eventBus.off("SET_REVIEW_TEXT", onSetReviewText);
+            eventBus.off("SET_REVIEW_RATING", onSetReviewRating);
+            eventBus.off("SUBMIT_REVIEW", onSubmitReview);
+        };
+    }, [handleSendComment, productId, setReviewComment, setReviewRating]);
+
     const pickImages = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -91,60 +175,13 @@ export default function ReviewSection({ productId }: ReviewSectionProps) {
                 const uri = asset.uri;
                 const name = uri.split("/").pop() ?? "photo.jpg";
                 const match = /\.(\w+)$/.exec(name);
-                const type = match ? `image/${match[1]}` : `image`;
+                const type = match ? `image/${match[1]}` : "image";
                 return { uri, name, type };
             });
-            setImages(selected); // 🟢 dùng mảng thay vì 1 file
+            setImages(selected);
         }
     };
 
-
-    // 📤 Gửi review
-    const handleSendComment = async () => {
-        if (!canComment) {
-            alert("Bạn chưa thể đánh giá sản phẩm này ❌");
-            return;
-        }
-
-        if (!comment.trim() || rating === 0) {
-            alert("Vui lòng nhập nội dung và chọn sao 🌟");
-            return;
-        }
-
-        try {
-            setLoading(true);
-            let uploadedNames: string[] = [];
-
-            // 📤 Nếu có ảnh thì upload trước
-            if (images.length > 0) {
-                const res = await uploadFile(images, "reviews");
-                uploadedNames = res.data?.fileName ?? [];
-            }
-
-            // 📝 Gửi review lên backend
-            await postReviewApi({
-                product: productId,
-                order: "",
-                rating,
-                comment,
-                images: uploadedNames,
-            });
-            console.log(">>>>>>>>>>>>>>>>images", images);
-            // 🔄 Reset form sau khi gửi
-            setComment("");
-            setRating(0);
-            setImages([]);
-            await loadAll();
-        } catch (err) {
-            console.error("❌ Lỗi gửi review:", err);
-            alert("Không thể gửi đánh giá");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-
-    // 💬 Gửi phản hồi
     const handleReply = async (reviewId: string) => {
         if (!replyText.trim()) return;
         try {
@@ -164,18 +201,9 @@ export default function ReviewSection({ productId }: ReviewSectionProps) {
         setRefreshing(false);
     };
 
-    if (!reviews && !canComment) {
-        return (
-            <View style={{ padding: 16 }}>
-                <ActivityIndicator />
-            </View>
-        );
-    }
-    // 🗑️ Xóa review
     const handleDeleteReview = async (reviewId: string) => {
         try {
-            // 🔹 Gọi API xóa ở đây
-            await deleteReviewApi(reviewId); // bạn tự implement
+            await deleteReviewApi(reviewId);
             await fetchReviews();
         } catch (err) {
             console.error("❌ Lỗi xóa review:", err);
@@ -183,17 +211,23 @@ export default function ReviewSection({ productId }: ReviewSectionProps) {
         }
     };
 
-    // 🗑️ Xóa reply
     const handleDeleteReply = async (reviewId: string, replyId: string) => {
         try {
-            // 🔹 Gọi API xóa reply ở đây
-            await deleteReplyApi(reviewId, replyId); // bạn tự implement
+            await deleteReplyApi(reviewId, replyId);
             await fetchReviews();
         } catch (err) {
             console.error("❌ Lỗi xóa phản hồi:", err);
             alert("Không thể xóa phản hồi");
         }
     };
+
+    if (!reviews && !canComment) {
+        return (
+            <View style={{ padding: 16 }}>
+                <ActivityIndicator />
+            </View>
+        );
+    }
 
     return (
         <ScrollView
@@ -202,7 +236,6 @@ export default function ReviewSection({ productId }: ReviewSectionProps) {
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
             }
         >
-            {/* 🟡 Viết review */}
             {canComment && (
                 <Card style={{ margin: 12, borderRadius: 16 }}>
                     <Card.Content>
@@ -223,7 +256,7 @@ export default function ReviewSection({ productId }: ReviewSectionProps) {
                                     icon={i < rating ? "star" : "star-outline"}
                                     iconColor={i < rating ? "#ffb300" : "#ccc"}
                                     size={32}
-                                    onPress={() => setRating(i + 1)}
+                                    onPress={() => setReviewRating(i + 1)}
                                 />
                             ))}
                         </View>
@@ -232,7 +265,7 @@ export default function ReviewSection({ productId }: ReviewSectionProps) {
                             mode="outlined"
                             placeholder="Nhập bình luận..."
                             value={comment}
-                            onChangeText={setComment}
+                            onChangeText={setReviewComment}
                             multiline
                         />
 
@@ -270,7 +303,6 @@ export default function ReviewSection({ productId }: ReviewSectionProps) {
                             </View>
                         )}
 
-
                         <Button
                             mode="contained"
                             onPress={handleSendComment}
@@ -287,7 +319,6 @@ export default function ReviewSection({ productId }: ReviewSectionProps) {
                 </Card>
             )}
 
-            {/* 🟣 Danh sách review */}
             <View style={{ paddingHorizontal: 12 }}>
                 <Text variant="titleLarge" style={{ fontWeight: "700" }}>
                     Bình luận ({reviews.length})
@@ -300,7 +331,7 @@ export default function ReviewSection({ productId }: ReviewSectionProps) {
                         title={() => (
                             <View>
                                 <Text style={{ fontWeight: "600", fontSize: 16 }}>
-                                    {typeof r.user === "object" ? (r.user as IUserR).name : "Ẩn danh"}
+                                    {typeof r.user === "object" ? (r.user as IUser).name : "Ẩn danh"}
                                 </Text>
                                 <Text style={{ color: "gray", fontSize: 12 }}>
                                     {new Date(r.createdAt).toLocaleString("vi-VN")}
@@ -322,13 +353,12 @@ export default function ReviewSection({ productId }: ReviewSectionProps) {
                             <Avatar.Text
                                 label={
                                     typeof r.user === "object"
-                                        ? (r.user as IUserR).name[0]
+                                        ? (r.user as IUser).name[0]
                                         : "?"
                                 }
                                 size={40}
                             />
                         )}
-                        // 🗑️ Thêm nút xóa bên phải (chỉ hiện nếu là chủ comment)
                         right={() =>
                             typeof r.user === "object" &&
                             r.user._id === appState?._id && (
@@ -430,7 +460,7 @@ export default function ReviewSection({ productId }: ReviewSectionProps) {
                                         <View style={{ flex: 1 }}>
                                             <Text style={{ fontWeight: "600", color: "#ff6d00" }}>
                                                 {typeof rep.user === "object"
-                                                    ? (rep.user as IUserR).name
+                                                    ? (rep.user as IUser).name
                                                     : "Ẩn danh"}
                                             </Text>
                                             <Text>{rep.comment}</Text>
@@ -439,7 +469,6 @@ export default function ReviewSection({ productId }: ReviewSectionProps) {
                                             </Text>
                                         </View>
 
-                                        {/* 🗑️ Xóa reply (nếu là chính chủ) */}
                                         {typeof rep.user === "object" &&
                                             rep.user._id === appState?._id && (
                                                 <IconButton
@@ -455,7 +484,6 @@ export default function ReviewSection({ productId }: ReviewSectionProps) {
                         )}
                     </View>
                 </Card>
-
             ))}
         </ScrollView>
     );

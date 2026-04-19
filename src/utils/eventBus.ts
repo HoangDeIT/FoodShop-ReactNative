@@ -52,5 +52,17 @@ type AppEvents = {
         conversationId: string;
         text: string;
     };
+    SET_REVIEW_TEXT: {
+        productId: string;
+        text: string;
+        reviewContext?: Record<string, any>[];
+    };
+    SET_REVIEW_RATING: {
+        productId: string;
+        rating: number;
+    };
+    SUBMIT_REVIEW: {
+        productId: string;
+    };
 };
 export const eventBus = mitt<AppEvents>();
